@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowRight, Play, Sparkles, Volume2, VolumeX } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 
@@ -37,17 +37,28 @@ export function WatchIntroFilmButton({
   );
 }
 
-// Timeline choreography (ms):
-// 0ms -> 1700ms: Pure, unobstructed official CAVO video plays full-screen
-// 1700ms: "Welcome to CAVO Island" gently descends into the center over the video
-// 7200ms: Smooth cinema curtain dissolve revealing the website
-const TITLE_REVEAL_MS = 1700;
-const AUTO_ENTER_MS = 7200;
+const TITLE_REVEAL_AFTER_PLAY_MS = 1500;
+const TITLE_FALLBACK_MS = 2400;
+const PLAYBACK_WINDOW_MS = 6000;
+const SAFETY_MAX_WAIT_MS = 12000;
 
-const MOBILE_VIDEO_SRC = "/media/video/cavo-official-intro-mobile.mp4?v=6";
-const DESKTOP_VIDEO_SRC = "/media/video/cavo-official-intro.mp4?v=6";
-const MOBILE_POSTER_SRC = "/media/video/cavo-official-poster-mobile.jpg?v=6";
-const DESKTOP_POSTER_SRC = "/media/video/cavo-official-poster.jpg?v=6";
+const MOBILE_VIDEO_SRC = "/media/video/cavo-official-intro-mobile.mp4?v=8";
+const DESKTOP_VIDEO_SRC = "/media/video/cavo-official-intro.mp4?v=8";
+const MOBILE_POSTER_SRC = "/media/video/cavo-official-poster-mobile.jpg?v=8";
+const DESKTOP_POSTER_SRC = "/media/video/cavo-official-poster.jpg?v=8";
+
+// Module-level constants so React hydration & re-renders NEVER touch or reset the live <video> node
+const STATIC_VIDEO_STAGE_HTML = {
+  __html:
+    '<video id="cavo-intro-video" autoplay muted playsinline webkit-playsinline="true" preload="auto" class="h-full w-full bg-transparent object-cover object-center"></video>',
+};
+
+// Executes synchronously at 0ms during HTML parsing (before React bundles download):
+// downloads ONLY the matching device video (1.3 MB on mobile instead of 8.7 MB dual videos)
+// and begins muted inline playback immediately on initial page open.
+const STATIC_BOOT_SCRIPT_HTML = {
+  __html: `(function(){var v=document.getElementById('cavo-intro-video');if(!v)return;var m=window.matchMedia('(max-width: 767px)').matches;v.defaultMuted=true;v.muted=true;v.playsInline=true;v.autoplay=true;v.setAttribute('muted','');v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','true');if(!v.getAttribute('src')){v.src=m?'${MOBILE_VIDEO_SRC}':'${DESKTOP_VIDEO_SRC}';var p=v.play();if(p&&p.catch)p.catch(function(){});}})();`,
+};
 
 export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
   const isAr = locale === "ar";
@@ -55,29 +66,35 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
   const [showWelcomeText, setShowWelcomeText] = useState(false);
   const [closing, setClosing] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [playbackStarted, setPlaybackStarted] = useState(false);
   const [runId, setRunId] = useState(0);
 
-  const mobileVideoRef = useRef<HTMLVideoElement | null>(null);
-  const desktopVideoRef = useRef<HTMLVideoElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const closingRef = useRef(false);
 
-  const getActiveVideo = (): HTMLVideoElement | null => {
-    if (typeof window === "undefined") return null;
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    return isMobile ? mobileVideoRef.current : desktopVideoRef.current;
+  const getVideoElement = (): HTMLVideoElement | null => {
+    return (
+      stageRef.current?.querySelector("video") ??
+      (typeof document !== "undefined"
+        ? (document.getElementById("cavo-intro-video") as HTMLVideoElement | null)
+        : null)
+    );
   };
 
   const triggerDismiss = () => {
-    if (closing) return;
+    if (closingRef.current) return;
+    closingRef.current = true;
     hasPlayedIntroOnThisLoad = true;
     setClosing(true);
     window.setTimeout(() => {
       setVisible(false);
       setClosing(false);
+      closingRef.current = false;
     }, 850);
   };
 
   const toggleSound = () => {
-    const vid = getActiveVideo();
+    const vid = getVideoElement();
     if (!vid) return;
     const nextMuted = !vid.muted;
     vid.muted = nextMuted;
@@ -90,9 +107,11 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
   // Allow re-opening the intro film anytime from the Hero/Gallery "Watch Film" button
   useEffect(() => {
     const onReplay = () => {
+      closingRef.current = false;
       setShowWelcomeText(false);
       setClosing(false);
       setIsMuted(true);
+      setPlaybackStarted(false);
       setRunId((prev) => prev + 1);
       setVisible(true);
     };
@@ -100,66 +119,121 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
     return () => window.removeEventListener("cavo:replay-intro", onReplay);
   }, []);
 
-  // Main choreography: Play active viewport's native SSR <video> without src replacement or opacity hiding
+  // Coordinate video lifecycle without resetting initial 0ms boot stream
   useEffect(() => {
     if (!visible) return;
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    const activeVid = isMobile
-      ? mobileVideoRef.current
-      : desktopVideoRef.current;
-    const inactiveVid = isMobile
-      ? desktopVideoRef.current
-      : mobileVideoRef.current;
+    const vid = getVideoElement();
+    const mql = window.matchMedia("(max-width: 767px)");
 
-    if (inactiveVid) {
-      inactiveVid.pause();
+    const markPlaying = () => {
+      setPlaybackStarted(true);
+    };
+
+    const onTimeUpdate = () => {
+      if (vid && vid.currentTime > 0.02) {
+        setPlaybackStarted(true);
+      }
+    };
+
+    const tryResumeIfPaused = () => {
+      if (!vid) return;
+      if (!vid.paused && vid.currentTime > 0) {
+        setPlaybackStarted(true);
+        return;
+      }
+      if (vid.paused) {
+        vid.defaultMuted = true;
+        vid.muted = true;
+        vid.play().catch(() => {});
+      }
+    };
+
+    const onEnded = () => {
+      triggerDismiss();
+    };
+
+    if (vid) {
+      vid.defaultMuted = true;
+      vid.muted = true;
+      vid.playsInline = true;
+
+      const wantSrc = mql.matches ? MOBILE_VIDEO_SRC : DESKTOP_VIDEO_SRC;
+      const currentAttr = vid.getAttribute("src") || "";
+
+      if (!currentAttr || !currentAttr.includes(mql.matches ? "-mobile.mp4" : "intro.mp4")) {
+        vid.src = wantSrc;
+      } else if (runId > 0) {
+        // Only seek back to 0:00 on manual "Watch Film" replay — NEVER interrupt initial open!
+        vid.currentTime = 0;
+      }
+
+      vid.addEventListener("playing", markPlaying);
+      vid.addEventListener("timeupdate", onTimeUpdate);
+      vid.addEventListener("loadedmetadata", tryResumeIfPaused);
+      vid.addEventListener("loadeddata", tryResumeIfPaused);
+      vid.addEventListener("canplay", tryResumeIfPaused);
+      vid.addEventListener("ended", onEnded);
+
+      // Check if 0ms inline boot script already started playing before React hydrated
+      if (!vid.paused && vid.currentTime > 0.02) {
+        setPlaybackStarted(true);
+      } else if (vid.paused) {
+        vid.play().catch(() => {});
+      }
     }
 
-    if (activeVid) {
-      activeVid.defaultMuted = true;
-      activeVid.muted = true;
-      activeVid.currentTime = 0;
-      activeVid.play().catch(() => {
-        // Muted autoplay fallback
-      });
-    }
-
-    const revealTimer = window.setTimeout(() => {
+    const fallbackTitleTimer = window.setTimeout(() => {
       setShowWelcomeText(true);
-    }, TITLE_REVEAL_MS);
+    }, TITLE_FALLBACK_MS);
 
-    const closeTimer = window.setTimeout(() => {
-      hasPlayedIntroOnThisLoad = true;
-      setClosing(true);
-      window.setTimeout(() => {
-        setVisible(false);
-        setClosing(false);
-      }, 850);
-    }, AUTO_ENTER_MS);
+    const safetyCloseTimer = window.setTimeout(() => {
+      triggerDismiss();
+    }, SAFETY_MAX_WAIT_MS);
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-        hasPlayedIntroOnThisLoad = true;
-        setClosing(true);
-        window.setTimeout(() => {
-          setVisible(false);
-          setClosing(false);
-        }, 850);
+        triggerDismiss();
       }
     };
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       document.body.style.overflow = prevOverflow;
+      if (vid) {
+        vid.removeEventListener("playing", markPlaying);
+        vid.removeEventListener("timeupdate", onTimeUpdate);
+        vid.removeEventListener("loadedmetadata", tryResumeIfPaused);
+        vid.removeEventListener("loadeddata", tryResumeIfPaused);
+        vid.removeEventListener("canplay", tryResumeIfPaused);
+        vid.removeEventListener("ended", onEnded);
+      }
       window.removeEventListener("keydown", onKeyDown);
-      window.clearTimeout(revealTimer);
-      window.clearTimeout(closeTimer);
+      window.clearTimeout(fallbackTitleTimer);
+      window.clearTimeout(safetyCloseTimer);
     };
   }, [visible, runId]);
+
+  // Start the 6-second cinema showcase window ONLY after video frames actually begin playing
+  useEffect(() => {
+    if (!visible || !playbackStarted) return;
+
+    const revealTimer = window.setTimeout(() => {
+      setShowWelcomeText(true);
+    }, TITLE_REVEAL_AFTER_PLAY_MS);
+
+    const playbackCloseTimer = window.setTimeout(() => {
+      triggerDismiss();
+    }, PLAYBACK_WINDOW_MS);
+
+    return () => {
+      window.clearTimeout(revealTimer);
+      window.clearTimeout(playbackCloseTimer);
+    };
+  }, [visible, playbackStarted, runId]);
 
   if (!visible) return null;
 
@@ -174,35 +248,28 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
       aria-modal="true"
       aria-label="Welcome to CAVO Island Intro"
     >
-      {/* FULL-BLEED OFFICIAL CAVO VIDEO: Dedicated SSR Mobile & Desktop <video> elements (never opacity-0, never swapped) */}
+      {/* FULL-BLEED OFFICIAL CAVO VIDEO */}
       <div className="absolute inset-0 overflow-hidden bg-[#0c0906]">
-        {/* Mobile Portrait Video (< 768px) — has its own mobile src & mobile poster from 0ms SSR */}
-        <video
-          key={`mobile-${runId}`}
-          ref={mobileVideoRef}
-          src={MOBILE_VIDEO_SRC}
-          poster={MOBILE_POSTER_SRC}
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-          onEnded={triggerDismiss}
-          className="h-full w-full object-cover object-center md:hidden"
-        />
+        {/* Art-directed SSR poster underneath transparent <video>: 0ms portrait on mobile, 0ms widescreen on desktop */}
+        <picture className="pointer-events-none absolute inset-0 h-full w-full">
+          <source media="(max-width: 767px)" srcSet={MOBILE_POSTER_SRC} />
+          <img
+            src={DESKTOP_POSTER_SRC}
+            alt=""
+            fetchPriority="high"
+            decoding="sync"
+            className="h-full w-full object-cover object-center"
+          />
+        </picture>
 
-        {/* Desktop Widescreen Video (>= 768px) — identical to the original working desktop video */}
-        <video
-          key={`desktop-${runId}`}
-          ref={desktopVideoRef}
-          src={DESKTOP_VIDEO_SRC}
-          poster={DESKTOP_POSTER_SRC}
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-          onEnded={triggerDismiss}
-          className="hidden h-full w-full object-cover object-center md:block"
+        <div
+          key={runId}
+          ref={stageRef}
+          suppressHydrationWarning
+          className="relative z-[1] h-full w-full"
+          dangerouslySetInnerHTML={STATIC_VIDEO_STAGE_HTML}
         />
+        <script dangerouslySetInnerHTML={STATIC_BOOT_SCRIPT_HTML} />
       </div>
 
       {/* DYNAMIC CINEMA VIGNETTE: Ultra-clear at start, softly deepens when Welcome title descends */}
@@ -263,7 +330,7 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* CENTER STAGE: "Welcome to CAVO Island" gently descends from above after video plays */}
+      {/* CENTER STAGE: "Welcome to CAVO Island" gently descends from above */}
       <div className="relative z-30 mx-auto flex flex-1 flex-col items-center justify-center px-6 text-center">
         <div
           className={`flex flex-col items-center transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -316,12 +383,17 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
       {/* BOTTOM PROGRESS HAIRLINE */}
       <div className="relative z-30 mx-auto w-full max-w-md px-8 pb-7 sm:pb-10">
         <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/15">
-          <div
-            style={
-              { "--prog-dur": `${AUTO_ENTER_MS / 1000}s` } as React.CSSProperties
-            }
-            className="cavo-progress-fill cavo-gold-gradient h-full w-full rounded-full"
-          />
+          {playbackStarted ? (
+            <div
+              key={`prog-${runId}`}
+              style={
+                { "--prog-dur": `${PLAYBACK_WINDOW_MS / 1000}s` } as CSSProperties
+              }
+              className="cavo-progress-fill cavo-gold-gradient h-full w-full rounded-full"
+            />
+          ) : (
+            <div className="cavo-gold-gradient h-full w-1/4 animate-pulse rounded-full" />
+          )}
         </div>
       </div>
     </div>
