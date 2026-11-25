@@ -4,6 +4,8 @@ import { VenueDetailClient } from "@/components/VenueDetailClient";
 import { getVenueBySlug, venues } from "@/data/venues";
 import { isValidLocale, locales } from "@/lib/i18n";
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return locales.flatMap((locale) =>
     venues.map((venue) => ({

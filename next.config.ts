@@ -44,6 +44,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/",
+        destination: "/en",
+        permanent: false,
+      },
+      {
         source: "/yacht",
         destination: "/en/experiences/private-yacht",
         permanent: true,
@@ -57,6 +62,53 @@ const nextConfig: NextConfig = {
         source: "/:locale(en|ar)/visit",
         destination: "/:locale/contact",
         permanent: true,
+      },
+      {
+        source: "/experiences",
+        destination: "/en/experiences",
+        permanent: false,
+      },
+      {
+        source: "/experiences/:slug",
+        destination: "/en/experiences/:slug",
+        permanent: false,
+      },
+      {
+        source: "/menu",
+        destination: "/en/menu",
+        permanent: false,
+      },
+      {
+        source: "/book",
+        destination: "/en/book",
+        permanent: false,
+      },
+      {
+        source: "/private-events",
+        destination: "/en/private-events",
+        permanent: false,
+      },
+      {
+        source: "/gallery",
+        destination: "/en/gallery",
+        permanent: false,
+      },
+      {
+        source: "/contact",
+        destination: "/en/contact",
+        permanent: false,
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/bookings",
+        destination: "/api/concierge?kind=booking",
+      },
+      {
+        source: "/api/events",
+        destination: "/api/concierge?kind=event",
       },
     ];
   },

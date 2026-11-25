@@ -9,6 +9,9 @@ import { Navbar } from "@/components/Navbar";
 import { getSiteBaseUrl, siteConfig } from "@/data/site";
 import { getDirection, isValidLocale, locales, type Locale } from "@/lib/i18n";
 
+export const dynamic = "force-static";
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
