@@ -1,0 +1,619 @@
+@import "tailwindcss";
+
+:root {
+  /* Quiet Luxury — Matte Cashmere, Soft Oatmeal Silk & Muted Bronze-Latte (Zero Glare, Zero Dark/Navy) */
+  --cavo-pearl: #f6f3ee;
+  --cavo-soft-white: #f1ede6;
+  --cavo-ivory: #ebe5dc;
+  --cavo-stone: #e2dad0;
+  --cavo-sand: #d5cbc0;
+  --cavo-border: #d8cfc3;
+
+  /* Muted Brushed Bronze & Soft Latte Champagne (Not yellow, not glaring) */
+  --cavo-gold: #9e8466;
+  --cavo-gold-light: #bca78d;
+  --cavo-gold-deep: #786147;
+  --cavo-gold-pale: #eae3d9;
+  --cavo-champagne: #9e8466;
+  --cavo-champagne-light: #bca78d;
+
+  /* Natural Architectural Accents (Muted Terracotta & Warm Olive-Walnut) */
+  --cavo-terracotta: #8f5b44;
+  --cavo-nile: #4a3d31;
+
+  /* Warm Walnut & Espresso Ink for Typography (Soft contrast, never harsh black) */
+  --cavo-ink: #2c241d;
+  --cavo-obsidian: #332920;
+  --cavo-espresso: #46392e;
+  --cavo-smoke: #685c50;
+  --cavo-muted-gray: #8f8274;
+  --cavo-night: #332920;
+  --cavo-bronze: #9e8466;
+  --cavo-bronze-light: #bca78d;
+}
+
+@theme inline {
+  --color-cavo-pearl: var(--cavo-pearl);
+  --color-cavo-obsidian: var(--cavo-obsidian);
+  --color-cavo-espresso: var(--cavo-espresso);
+  --color-cavo-ivory: var(--cavo-ivory);
+  --color-cavo-soft-white: var(--cavo-soft-white);
+  --color-cavo-champagne: var(--cavo-champagne);
+  --color-cavo-champagne-light: var(--cavo-champagne-light);
+  --color-cavo-gold: var(--cavo-gold);
+  --color-cavo-gold-light: var(--cavo-gold-light);
+  --color-cavo-gold-deep: var(--cavo-gold-deep);
+  --color-cavo-gold-pale: var(--cavo-gold-pale);
+  --color-cavo-muted-gray: var(--cavo-muted-gray);
+  --color-cavo-smoke: var(--cavo-smoke);
+  --color-cavo-border: var(--cavo-border);
+  --color-cavo-ink: var(--cavo-ink);
+  --color-cavo-stone: var(--cavo-stone);
+  --color-cavo-sand: var(--cavo-sand);
+  --color-cavo-night: var(--cavo-night);
+  --color-cavo-bronze: var(--cavo-bronze);
+  --color-cavo-bronze-light: var(--cavo-bronze-light);
+  --color-cavo-terracotta: var(--cavo-terracotta);
+  --color-cavo-nile: var(--cavo-nile);
+
+  --font-display-en: var(--font-cormorant);
+  --font-sans-en: var(--font-jakarta);
+  --font-display-ar: var(--font-amiri);
+  --font-sans-ar: var(--font-cairo);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--cavo-pearl);
+  color: var(--cavo-ink);
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: rgba(158, 132, 102, 0.22);
+  color: var(--cavo-ink);
+}
+
+.font-en {
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-en .font-display {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+.font-ar {
+  font-family: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-ar .font-display {
+  font-family: var(--font-amiri), Georgia, serif;
+}
+
+.hairline {
+  border-color: var(--cavo-border);
+}
+
+.editorial-eyebrow-en {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+}
+
+.editorial-eyebrow-ar {
+  letter-spacing: 0;
+}
+
+/* Matte Luxury Surfaces & Micro-interactions */
+.cavo-glass {
+  background: rgba(246, 243, 238, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(158, 132, 102, 0.26);
+}
+
+.cavo-glass-warm {
+  background: linear-gradient(
+    135deg,
+    rgba(246, 243, 238, 0.94) 0%,
+    rgba(235, 229, 220, 0.9) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(158, 132, 102, 0.3);
+}
+
+.cavo-gold-gradient {
+  background: linear-gradient(135deg, #6f563d 0%, #83684a 50%, #5e4832 100%);
+}
+
+.cavo-gold-text {
+  background: linear-gradient(135deg, #6b533b 0%, #8d7152 50%, #824f3a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cavo-card-luxury {
+  background-color: #f8f6f2;
+  border: 1px solid rgba(158, 132, 102, 0.25);
+  box-shadow: 0 14px 38px -18px rgba(60, 46, 32, 0.1);
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cavo-card-luxury:hover {
+  transform: translateY(-5px);
+  border-color: rgba(158, 132, 102, 0.6);
+  box-shadow:
+    0 24px 54px -20px rgba(90, 70, 48, 0.18),
+    0 0 0 1px rgba(158, 132, 102, 0.22);
+}
+
+.cavo-btn-gold {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #6f563d 0%, #84694b 50%, #5d4731 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 26px -8px rgba(93, 71, 49, 0.42);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.35s ease;
+}
+
+.cavo-btn-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 80%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cavo-btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -8px rgba(117, 93, 67, 0.48);
+  filter: brightness(1.03);
+}
+
+.cavo-btn-gold:hover::after {
+  transform: translateX(120%);
+}
+
+.cavo-btn-pearl {
+  background-color: rgba(246, 243, 238, 0.92);
+  border: 1px solid rgba(158, 132, 102, 0.38);
+  color: var(--cavo-ink);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.cavo-btn-pearl:hover {
+  transform: translateY(-2px);
+  background-color: var(--cavo-gold-pale);
+  border-color: var(--cavo-gold);
+  box-shadow: 0 12px 26px -10px rgba(117, 93, 67, 0.2);
+}
+
+@keyframes cavoMarquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-cavo-marquee {
+  display: flex;
+  width: max-content;
+  animation: cavoMarquee 36s linear infinite;
+}
+
+.animate-cavo-marquee:hover {
+  animation-play-state: paused;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cavo-gold);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------------
+   Motion system (pure CSS — no JS animation runtime on first load)
+   ------------------------------------------------------------------ */
+:root {
+  --cavo-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cavoRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cavoFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cavoSwapIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cavoPopIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cavoPillIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cavoZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cavoDrawerIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cavoFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes cavoScrollCue {
+  0% {
+    transform: translate3d(0, -100%, 0);
+  }
+  60%,
+  100% {
+    transform: translate3d(0, 220%, 0);
+  }
+}
+
+.cavo-rise {
+  animation: cavoRise 0.95s var(--cavo-ease) both;
+  animation-delay: var(--d, 0s);
+}
+
+.cavo-swap-in {
+  animation: cavoSwapIn 0.42s var(--cavo-ease) both;
+  animation-delay: var(--d, 0s);
+}
+
+.cavo-fade-in {
+  animation: cavoFadeIn 0.3s ease-out both;
+}
+
+.cavo-pop-in {
+  animation: cavoPopIn 0.26s var(--cavo-ease) both;
+}
+
+.cavo-pill-in {
+  animation: cavoPillIn 0.32s var(--cavo-ease) both;
+}
+
+.cavo-zoom-in {
+  animation: cavoZoomIn 0.32s var(--cavo-ease) both;
+}
+
+.cavo-drawer-in {
+  animation: cavoDrawerIn 0.3s var(--cavo-ease) both;
+}
+
+.cavo-float {
+  animation: cavoFloat 5s ease-in-out infinite;
+}
+
+/* Universal 60fps GPU Scroll Reveal (works on iOS Safari, Android, WebViews & Desktop; never hides SSR LCP) */
+.cavo-reveal {
+  will-change: transform, opacity;
+}
+
+.cavo-reveal[data-reveal="pending"] {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.985);
+}
+
+.cavo-reveal[data-reveal="shown"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0s),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0s);
+}
+
+/* Cinema Ken Burns slow camera drift for active Hero & Day-to-Night frames */
+@keyframes cavoKenBurns {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.065) translate3d(-0.6%, -0.4%, 0);
+  }
+}
+
+.cavo-ken-burns {
+  animation: cavoKenBurns 6.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform;
+}
+
+/* Scene timer hairline fill */
+@keyframes cavoSceneTimer {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cavo-scene-timer {
+  transform-origin: left center;
+  animation: cavoSceneTimer 5.5s linear forwards;
+}
+
+[dir="rtl"] .cavo-scene-timer {
+  transform-origin: right center;
+}
+
+/* Soft edge fade mask for marquee & horizontal strips */
+.cavo-edge-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 5%,
+    #000 95%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 5%,
+    #000 95%,
+    transparent 100%
+  );
+}
+
+/* Luxury shimmer sheen on featured dark & cashmere surfaces */
+.cavo-sheen-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.cavo-sheen-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 25%,
+    rgba(255, 248, 236, 0.22) 50%,
+    transparent 75%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cavo-sheen-card:hover::before {
+  transform: translateX(130%);
+}
+
+/* ------------------------------------------------------------------
+   Welcome Cinema Intro keyframes (pure GPU CSS — zero Framer Motion)
+   ------------------------------------------------------------------ */
+@keyframes cavoIntroPan0 {
+  from {
+    opacity: 0;
+    transform: scale(1) translate3d(0%, 0%, 0);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.09) translate3d(-1.2%, -0.8%, 0);
+  }
+}
+
+@keyframes cavoIntroPan1 {
+  from {
+    opacity: 0;
+    transform: scale(1.09) translate3d(1.2%, 0%, 0);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.01) translate3d(-0.8%, -0.6%, 0);
+  }
+}
+
+@keyframes cavoIntroPan2 {
+  from {
+    opacity: 0;
+    transform: scale(1.01) translate3d(-1%, 0.5%, 0);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.09) translate3d(1%, -0.8%, 0);
+  }
+}
+
+@keyframes cavoIntroPan3 {
+  from {
+    opacity: 0;
+    transform: scale(1.08) translate3d(0.8%, -0.5%, 0);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translate3d(-0.8%, 0%, 0);
+  }
+}
+
+@keyframes cavoProgressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cavo-intro-pan-0 {
+  animation: cavoIntroPan0 2.6s linear forwards;
+  will-change: transform, opacity;
+}
+
+.cavo-intro-pan-1 {
+  animation: cavoIntroPan1 2.6s linear forwards;
+  will-change: transform, opacity;
+}
+
+.cavo-intro-pan-2 {
+  animation: cavoIntroPan2 2.6s linear forwards;
+  will-change: transform, opacity;
+}
+
+.cavo-intro-pan-3 {
+  animation: cavoIntroPan3 2.6s linear forwards;
+  will-change: transform, opacity;
+}
+
+.cavo-progress-fill {
+  transform-origin: left center;
+  animation: cavoProgressFill var(--prog-dur, 2.3s) linear forwards;
+}
+
+[dir="rtl"] .cavo-progress-fill {
+  transform-origin: right center;
+}
+
+@keyframes cavoFloatSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+}
+
+@keyframes cavoFloatReverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, 5px, 0);
+  }
+}
+
+.cavo-float-slow {
+  animation: cavoFloatSlow 4.5s ease-in-out infinite;
+}
+
+.cavo-float-reverse {
+  animation: cavoFloatReverse 5s ease-in-out infinite;
+}
+
+/* Decorative watermark numerals rendered via pseudo-element (not read as text) */
+.cavo-watermark::before {
+  content: attr(data-num);
+}
+
+/* Hide scrollbars on horizontal snap rails while keeping them scrollable */
+.cavo-no-scrollbar {
+  scrollbar-width: none;
+}
+
+.cavo-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
