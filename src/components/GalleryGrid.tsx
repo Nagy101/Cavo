@@ -31,7 +31,16 @@ export function GalleryGrid({
   const [filter, setFilter] = useState<"all" | GalleryCategory>("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const isAr = locale === "ar";
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    setIsMobileViewport(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   const filtered =
     filter === "all"
@@ -235,31 +244,52 @@ export function GalleryGrid({
             onClick={(e) => e.stopPropagation()}
             className="cavo-zoom-in max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[26px] border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[32px] sm:p-3"
           >
-            <div className="relative h-[52vh] w-full overflow-hidden rounded-[18px] bg-[#1a130d] sm:h-[58vh] sm:rounded-[22px]">
+            <div
+              onTouchStart={(e) => {
+                if (activeLightbox.mediaType === "video") {
+                  e.stopPropagation();
+                }
+              }}
+              onTouchEnd={(e) => {
+                if (activeLightbox.mediaType === "video") {
+                  e.stopPropagation();
+                }
+              }}
+              className="relative h-[52vh] w-full overflow-hidden rounded-[18px] bg-[#1a130d] sm:h-[58vh] sm:rounded-[22px]"
+            >
               {activeLightbox.mediaType === "video" ? (
                 <video
-                  key={activeLightbox.id}
+                  key={`${activeLightbox.id}-${isMobileViewport ? "m" : "d"}`}
+                  ref={(el) => {
+                    if (!el || el.dataset.initPlay === "1") return;
+                    el.dataset.initPlay = "1";
+                    el.playsInline = true;
+                    el.setAttribute("playsinline", "");
+                    el.setAttribute("webkit-playsinline", "true");
+                    const p = el.play();
+                    if (p && typeof p.then === "function") {
+                      p.catch(() => {
+                        el.defaultMuted = true;
+                        el.muted = true;
+                        el.play().catch(() => {});
+                      });
+                    }
+                  }}
+                  src={
+                    isMobileViewport && activeLightbox.mobileSrc
+                      ? activeLightbox.mobileSrc
+                      : activeLightbox.src
+                  }
                   controls
-                  autoPlay
                   playsInline
+                  preload="auto"
                   poster={
-                    typeof window !== "undefined" &&
-                    window.matchMedia("(max-width: 767px)").matches &&
-                    activeLightbox.mobilePoster
+                    isMobileViewport && activeLightbox.mobilePoster
                       ? activeLightbox.mobilePoster
                       : activeLightbox.poster
                   }
                   className="h-full w-full object-contain"
-                >
-                  {activeLightbox.mobileSrc && (
-                    <source
-                      src={activeLightbox.mobileSrc}
-                      media="(max-width: 767px)"
-                      type="video/mp4"
-                    />
-                  )}
-                  <source src={activeLightbox.src} type="video/mp4" />
-                </video>
+                />
               ) : (
                 <Image
                   src={activeLightbox.src}
