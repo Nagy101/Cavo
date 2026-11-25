@@ -172,7 +172,6 @@ describe("Responsive intro & gallery video assets", () => {
     const requiredPublicAssets = [
       "media/video/cavo-official-intro.mp4",
       "media/video/cavo-official-intro-mobile.mp4",
-      "media/video/cavo-official-intro-mobile.webp",
       "media/video/cavo-official-poster.jpg",
       "media/video/cavo-official-poster-mobile.jpg",
     ];

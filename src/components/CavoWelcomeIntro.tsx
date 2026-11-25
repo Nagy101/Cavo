@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Play, Sparkles, Volume2, VolumeX } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 
@@ -37,87 +37,62 @@ export function WatchIntroFilmButton({
   );
 }
 
-const TITLE_REVEAL_AFTER_PLAY_MS = 1450;
-const TITLE_FALLBACK_MS = 2100;
-const PLAYBACK_WINDOW_MS = 6200;
-const SAFETY_MAX_WAIT_MS = 9500;
+// Timeline choreography (ms):
+// 0ms -> 1700ms: Pure, unobstructed official CAVO video plays full-screen
+// 1700ms: "Welcome to CAVO Island" gently descends into the center over the video
+// 7200ms: Smooth cinema curtain dissolve revealing the website
+const TITLE_REVEAL_MS = 1700;
+const AUTO_ENTER_MS = 7200;
 
-const MOBILE_VIDEO_SRC = "/media/video/cavo-official-intro-mobile.mp4?v=5";
-const MOBILE_WEBP_STREAM_SRC = "/media/video/cavo-official-intro-mobile.webp?v=5";
-const DESKTOP_VIDEO_SRC = "/media/video/cavo-official-intro.mp4?v=5";
-const MOBILE_POSTER_SRC = "/media/video/cavo-official-poster-mobile.jpg?v=5";
-const DESKTOP_POSTER_SRC = "/media/video/cavo-official-poster.jpg?v=5";
+const MOBILE_VIDEO_SRC = "/media/video/cavo-official-intro-mobile.mp4?v=6";
+const DESKTOP_VIDEO_SRC = "/media/video/cavo-official-intro.mp4?v=6";
+const MOBILE_POSTER_SRC = "/media/video/cavo-official-poster-mobile.jpg?v=6";
+const DESKTOP_POSTER_SRC = "/media/video/cavo-official-poster.jpg?v=6";
 
 export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
   const isAr = locale === "ar";
   const [visible, setVisible] = useState(() => !hasPlayedIntroOnThisLoad);
-  const [viewportMode, setViewportMode] = useState<"ssr" | "mobile" | "desktop">(
-    "ssr"
-  );
   const [showWelcomeText, setShowWelcomeText] = useState(false);
   const [closing, setClosing] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [videoReady, setVideoReady] = useState(false);
-  const [useWebpStream, setUseWebpStream] = useState(false);
   const [runId, setRunId] = useState(0);
 
-  const videoStageRef = useRef<HTMLDivElement | null>(null);
-  const closingRef = useRef(false);
+  const mobileVideoRef = useRef<HTMLVideoElement | null>(null);
+  const desktopVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  const getActiveVideo = (): HTMLVideoElement | null => {
+    if (typeof window === "undefined") return null;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    return isMobile ? mobileVideoRef.current : desktopVideoRef.current;
+  };
 
   const triggerDismiss = () => {
-    if (closingRef.current) return;
-    closingRef.current = true;
+    if (closing) return;
     hasPlayedIntroOnThisLoad = true;
     setClosing(true);
     window.setTimeout(() => {
       setVisible(false);
       setClosing(false);
-      closingRef.current = false;
     }, 850);
   };
 
-  const getVideoElement = (): HTMLVideoElement | null => {
-    return videoStageRef.current?.querySelector("video") ?? null;
-  };
-
-  const toggleSound = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const vid = getVideoElement();
+  const toggleSound = () => {
+    const vid = getActiveVideo();
     if (!vid) return;
     const nextMuted = !vid.muted;
     vid.muted = nextMuted;
     setIsMuted(nextMuted);
     if (vid.paused) {
-      vid
-        .play()
-        .then(() => {
-          setUseWebpStream(false);
-          setVideoReady(true);
-        })
-        .catch(() => {});
+      vid.play().catch(() => {});
     }
   };
-
-  // Detect exact viewport immediately on client mount and track changes
-  useEffect(() => {
-    const mql = window.matchMedia("(max-width: 767px)");
-    setViewportMode(mql.matches ? "mobile" : "desktop");
-    const onChange = (e: MediaQueryListEvent) => {
-      setViewportMode(e.matches ? "mobile" : "desktop");
-    };
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
 
   // Allow re-opening the intro film anytime from the Hero/Gallery "Watch Film" button
   useEffect(() => {
     const onReplay = () => {
-      closingRef.current = false;
       setShowWelcomeText(false);
       setClosing(false);
       setIsMuted(true);
-      setVideoReady(false);
-      setUseWebpStream(false);
       setRunId((prev) => prev + 1);
       setVisible(true);
     };
@@ -125,171 +100,66 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
     return () => window.removeEventListener("cavo:replay-intro", onReplay);
   }, []);
 
-  // Raw HTML markup guarantees WebKit (iOS Safari) and Blink (Android Chrome) parse
-  // native `autoplay`, `muted`, and `playsinline` attributes at element creation time.
-  const rawVideoHtml = useMemo(() => {
-    if (viewportMode === "ssr") return "";
-    const src =
-      viewportMode === "mobile" ? MOBILE_VIDEO_SRC : DESKTOP_VIDEO_SRC;
-    const poster =
-      viewportMode === "mobile" ? MOBILE_POSTER_SRC : DESKTOP_POSTER_SRC;
-    return `<video autoplay muted playsinline webkit-playsinline="true" x5-playsinline="true" preload="auto" poster="${poster}" src="${src}" class="h-full w-full object-cover object-center"></video>`;
-  }, [viewportMode]);
-
-  // Attach native playback listeners + automatic Animated WebP stream fallback if OS blocks <video>
-  // (e.g. iPhone Low Power Mode, Android Data Saver, or strict in-app WebViews)
+  // Main choreography: Play active viewport's native SSR <video> without src replacement or opacity hiding
   useEffect(() => {
-    if (!visible || viewportMode === "ssr") return;
+    if (!visible) return;
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const vid = getVideoElement();
-    const isMobile = viewportMode === "mobile";
-    let playbackStarted = false;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    const activeVid = isMobile
+      ? mobileVideoRef.current
+      : desktopVideoRef.current;
+    const inactiveVid = isMobile
+      ? desktopVideoRef.current
+      : mobileVideoRef.current;
 
-    const activateWebpIfNeeded = () => {
-      if (!playbackStarted && isMobile) {
-        setUseWebpStream(true);
-      }
-    };
-
-    const markVideoPlaying = () => {
-      playbackStarted = true;
-      setUseWebpStream(false);
-      setVideoReady(true);
-    };
-
-    const onTimeUpdate = () => {
-      if (vid && vid.currentTime > 0.02) {
-        markVideoPlaying();
-      }
-    };
-
-    const onCanPlay = () => {
-      if (!vid) return;
-      if (!vid.paused) {
-        markVideoPlaying();
-        return;
-      }
-      vid.defaultMuted = true;
-      vid.muted = true;
-      const p = vid.play();
-      if (p && typeof p.then === "function") {
-        p.then(() => {
-          markVideoPlaying();
-        }).catch((err: unknown) => {
-          const name = err instanceof Error ? err.name : "";
-          if (name === "NotAllowedError") {
-            activateWebpIfNeeded();
-          }
-        });
-      }
-    };
-
-    const onEnded = () => {
-      triggerDismiss();
-    };
-
-    if (vid) {
-      vid.defaultMuted = true;
-      vid.muted = true;
-      vid.addEventListener("playing", markVideoPlaying);
-      vid.addEventListener("timeupdate", onTimeUpdate);
-      vid.addEventListener("canplay", onCanPlay);
-      vid.addEventListener("ended", onEnded);
-
-      if (!vid.paused && vid.readyState >= 2) {
-        markVideoPlaying();
-      } else {
-        const p = vid.play();
-        if (p && typeof p.then === "function") {
-          p.then(() => {
-            if (vid.readyState >= 2) {
-              markVideoPlaying();
-            }
-          }).catch((err: unknown) => {
-            const name = err instanceof Error ? err.name : "";
-            // Immediately switch to zero-tap Animated WebP stream if OS policy (Low Power Mode) blocks <video>
-            if (name === "NotAllowedError") {
-              activateWebpIfNeeded();
-            }
-          });
-        }
-      }
+    if (inactiveVid) {
+      inactiveVid.pause();
     }
 
-    // Watchdog: only switch if video buffered (readyState >= 2) yet browser silently paused it,
-    // or if nothing started after 2.5s
-    const readyPausedTimer = isMobile
-      ? window.setTimeout(() => {
-          if (
-            !playbackStarted &&
-            vid &&
-            vid.readyState >= 2 &&
-            (vid.paused || vid.currentTime < 0.02)
-          ) {
-            activateWebpIfNeeded();
-          }
-        }, 900)
-      : undefined;
+    if (activeVid) {
+      activeVid.defaultMuted = true;
+      activeVid.muted = true;
+      activeVid.currentTime = 0;
+      activeVid.play().catch(() => {
+        // Muted autoplay fallback
+      });
+    }
 
-    const watchdogTimer = isMobile
-      ? window.setTimeout(() => {
-          if (!playbackStarted && (!vid || vid.paused || vid.currentTime < 0.02)) {
-            activateWebpIfNeeded();
-          }
-        }, 2500)
-      : undefined;
-
-    const fallbackTitleTimer = window.setTimeout(() => {
+    const revealTimer = window.setTimeout(() => {
       setShowWelcomeText(true);
-    }, TITLE_FALLBACK_MS);
+    }, TITLE_REVEAL_MS);
 
-    const safetyCloseTimer = window.setTimeout(() => {
-      triggerDismiss();
-    }, SAFETY_MAX_WAIT_MS);
+    const closeTimer = window.setTimeout(() => {
+      hasPlayedIntroOnThisLoad = true;
+      setClosing(true);
+      window.setTimeout(() => {
+        setVisible(false);
+        setClosing(false);
+      }, 850);
+    }, AUTO_ENTER_MS);
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-        triggerDismiss();
+        hasPlayedIntroOnThisLoad = true;
+        setClosing(true);
+        window.setTimeout(() => {
+          setVisible(false);
+          setClosing(false);
+        }, 850);
       }
     };
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       document.body.style.overflow = prevOverflow;
-      if (vid) {
-        vid.removeEventListener("playing", markVideoPlaying);
-        vid.removeEventListener("timeupdate", onTimeUpdate);
-        vid.removeEventListener("canplay", onCanPlay);
-        vid.removeEventListener("ended", onEnded);
-      }
       window.removeEventListener("keydown", onKeyDown);
-      if (readyPausedTimer !== undefined) window.clearTimeout(readyPausedTimer);
-      if (watchdogTimer !== undefined) window.clearTimeout(watchdogTimer);
-      window.clearTimeout(fallbackTitleTimer);
-      window.clearTimeout(safetyCloseTimer);
-    };
-  }, [visible, viewportMode, runId]);
-
-  // Once playback (either native MP4 or Animated WebP stream) is active, run the cinema choreography
-  useEffect(() => {
-    if (!visible || !videoReady) return;
-
-    const revealTimer = window.setTimeout(() => {
-      setShowWelcomeText(true);
-    }, TITLE_REVEAL_AFTER_PLAY_MS);
-
-    const playbackCloseTimer = window.setTimeout(() => {
-      triggerDismiss();
-    }, PLAYBACK_WINDOW_MS);
-
-    return () => {
       window.clearTimeout(revealTimer);
-      window.clearTimeout(playbackCloseTimer);
+      window.clearTimeout(closeTimer);
     };
-  }, [visible, videoReady, runId]);
+  }, [visible, runId]);
 
   if (!visible) return null;
 
@@ -304,45 +174,35 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
       aria-modal="true"
       aria-label="Welcome to CAVO Island Intro"
     >
-      {/* FULL-BLEED OFFICIAL CAVO VIDEO (Responsive Mobile Portrait & Desktop Widescreen) */}
+      {/* FULL-BLEED OFFICIAL CAVO VIDEO: Dedicated SSR Mobile & Desktop <video> elements (never opacity-0, never swapped) */}
       <div className="absolute inset-0 overflow-hidden bg-[#0c0906]">
-        {/* Art-directed SSR poster: renders single-frame portrait on mobile and split widescreen on desktop at 0ms */}
-        <picture className="pointer-events-none absolute inset-0 h-full w-full">
-          <source media="(max-width: 767px)" srcSet={MOBILE_POSTER_SRC} />
-          <img
-            src={DESKTOP_POSTER_SRC}
-            alt=""
-            fetchPriority="high"
-            decoding="sync"
-            className="h-full w-full object-cover object-center"
-          />
-        </picture>
+        {/* Mobile Portrait Video (< 768px) — has its own mobile src & mobile poster from 0ms SSR */}
+        <video
+          key={`mobile-${runId}`}
+          ref={mobileVideoRef}
+          src={MOBILE_VIDEO_SRC}
+          poster={MOBILE_POSTER_SRC}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          onEnded={triggerDismiss}
+          className="h-full w-full object-cover object-center md:hidden"
+        />
 
-        {/* Native Hardware MP4 Stage (raw HTML attributes bypass React muted SSR quirk) */}
-        {viewportMode !== "ssr" && !useWebpStream && (
-          <div
-            key={`vid-${viewportMode}-${runId}`}
-            ref={videoStageRef}
-            className={`relative z-[1] h-full w-full transition-opacity duration-300 ${
-              videoReady ? "opacity-100" : "opacity-0"
-            }`}
-            dangerouslySetInnerHTML={{ __html: rawVideoHtml }}
-          />
-        )}
-
-        {/* Zero-Tap Animated WebP Stream: Auto-activates if OS Low Power Mode / Data Saver blocks <video> */}
-        {useWebpStream && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={`webp-${runId}`}
-            src={`${MOBILE_WEBP_STREAM_SRC}&r=${runId}`}
-            alt=""
-            onLoad={() => setVideoReady(true)}
-            className={`pointer-events-none relative z-[2] h-full w-full object-cover object-center transition-opacity duration-300 ${
-              videoReady ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        )}
+        {/* Desktop Widescreen Video (>= 768px) — identical to the original working desktop video */}
+        <video
+          key={`desktop-${runId}`}
+          ref={desktopVideoRef}
+          src={DESKTOP_VIDEO_SRC}
+          poster={DESKTOP_POSTER_SRC}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          onEnded={triggerDismiss}
+          className="hidden h-full w-full object-cover object-center md:block"
+        />
       </div>
 
       {/* DYNAMIC CINEMA VIGNETTE: Ultra-clear at start, softly deepens when Welcome title descends */}
@@ -371,35 +231,30 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {!useWebpStream && (
-            <button
-              type="button"
-              onClick={toggleSound}
-              aria-label={
-                isMuted
-                  ? isAr
-                    ? "تشغيل الصوت"
-                    : "Unmute audio"
-                  : isAr
-                    ? "كتم الصوت"
-                    : "Mute audio"
-              }
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-[#16100b]/60 text-[#f0dec2] backdrop-blur-md transition hover:border-[#d6bc96] hover:bg-[#2a1f16]"
-            >
-              {isMuted ? (
-                <VolumeX className="h-4 w-4 text-[#e5caa4]" />
-              ) : (
-                <Volume2 className="h-4 w-4 text-[#e5caa4]" />
-              )}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-label={
+              isMuted
+                ? isAr
+                  ? "تشغيل الصوت"
+                  : "Unmute audio"
+                : isAr
+                  ? "كتم الصوت"
+                  : "Mute audio"
+            }
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-[#16100b]/60 text-[#f0dec2] backdrop-blur-md transition hover:border-[#d6bc96] hover:bg-[#2a1f16]"
+          >
+            {isMuted ? (
+              <VolumeX className="h-4 w-4 text-[#e5caa4]" />
+            ) : (
+              <Volume2 className="h-4 w-4 text-[#e5caa4]" />
+            )}
+          </button>
 
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerDismiss();
-            }}
+            onClick={triggerDismiss}
             className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-white/25 bg-[#16100b]/60 px-4 py-1.5 text-xs font-semibold text-[#f5ece0] backdrop-blur-md transition hover:border-[#d6bc96] hover:bg-[var(--cavo-gold-deep)] hover:text-white"
           >
             <span>{isAr ? "تخطي" : "Skip"}</span>
@@ -408,7 +263,7 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* CENTER STAGE: "Welcome to CAVO Island" gently descends from above */}
+      {/* CENTER STAGE: "Welcome to CAVO Island" gently descends from above after video plays */}
       <div className="relative z-30 mx-auto flex flex-1 flex-col items-center justify-center px-6 text-center">
         <div
           className={`flex flex-col items-center transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -461,17 +316,12 @@ export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
       {/* BOTTOM PROGRESS HAIRLINE */}
       <div className="relative z-30 mx-auto w-full max-w-md px-8 pb-7 sm:pb-10">
         <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/15">
-          {videoReady ? (
-            <div
-              key={`ready-${runId}`}
-              style={
-                { "--prog-dur": `${PLAYBACK_WINDOW_MS / 1000}s` } as CSSProperties
-              }
-              className="cavo-progress-fill cavo-gold-gradient h-full w-full rounded-full"
-            />
-          ) : (
-            <div className="cavo-gold-gradient h-full w-1/4 animate-pulse rounded-full" />
-          )}
+          <div
+            style={
+              { "--prog-dur": `${AUTO_ENTER_MS / 1000}s` } as React.CSSProperties
+            }
+            className="cavo-progress-fill cavo-gold-gradient h-full w-full rounded-full"
+          />
         </div>
       </div>
     </div>
