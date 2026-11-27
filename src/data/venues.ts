@@ -405,8 +405,8 @@ export const venues: VenueData[] = [
       en: "Designed for guests seeking a quieter, more elevated setting within the CAVO collection at Nile City Boat. From sunlit riverside lunches to dimly lit late-night tables accented with matte-black lamps, cloth napkins, steaks, seafood spreads, and refined music, CAVO Elite operates with its own dedicated guest desk (+20 121 201 1201).",
       ar: "كافو إيليت صُمم للضيوف الباحثين عن خصوصية أعلى وهدوء راقٍ داخل مركب نايل سيتي. من غداء مطل على نوافذ النيل إلى عشاء على أضواء المصابيح الخافتة وأطباق الستيك والمأكولات البحرية والموسيقى المختارة، مع فريق استقبال وواتساب مخصص لتأكيد طاولتك (+201212011201).",
     },
-    heroImage: "/media/venues/elite/lounge-bar.webp",
-    cardImage: "/media/venues/elite/cavo-sign-glow.jpg",
+    heroImage: "/media/hero/main-evening.jpg",
+    cardImage: "/media/hero/main-evening.jpg",
     gallery: [
       {
         src: "/media/venues/elite/elite-night-dinner.jpg",

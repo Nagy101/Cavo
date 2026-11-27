@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   ChevronLeft,
@@ -40,6 +41,7 @@ export function GalleryGrid({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [lightboxVideoPlaying, setLightboxVideoPlaying] = useState(false);
+  const [lightboxImgLoaded, setLightboxImgLoaded] = useState(false);
   const lightboxVideoRef = useRef<HTMLVideoElement | null>(null);
   const isAr = locale === "ar";
 
@@ -60,6 +62,7 @@ export function GalleryGrid({
 
   useEffect(() => {
     setLightboxVideoPlaying(false);
+    setLightboxImgLoaded(false);
     if (lightboxIndex === null) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -210,216 +213,239 @@ export function GalleryGrid({
         })}
       </div>
 
-      {/* Lightbox Dialog */}
-      {activeLightbox && lightboxIndex !== null && (
-        <div
-          onClick={() => setLightboxIndex(null)}
-          onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
-          onTouchEnd={(e) => {
-            if (touchStartX === null) return;
-            const endX = e.changedTouches[0]?.clientX ?? touchStartX;
-            const deltaX = endX - touchStartX;
-            setTouchStartX(null);
-            if (Math.abs(deltaX) < 42) return;
-            const dir = deltaX < 0 ? 1 : -1;
-            const step = isAr ? -dir : dir;
-            setLightboxIndex(
-              (lightboxIndex + step + visibleItems.length) % visibleItems.length
-            );
-          }}
-          className="cavo-fade-in fixed inset-0 z-50 flex items-center justify-center bg-[#140f0b]/90 p-3 backdrop-blur-xl sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={activeLightbox.title[locale]}
-        >
-          <button
-            type="button"
+      {/* Lightbox Dialog — Portaled directly into document.body so it ALWAYS centers over the viewport */}
+      {activeLightbox &&
+        lightboxIndex !== null &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
             onClick={() => setLightboxIndex(null)}
-            aria-label={isAr ? "إغلاق" : "Close lightbox"}
-            className="absolute end-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg transition hover:scale-105 hover:bg-[var(--cavo-gold-deep)] hover:text-white sm:end-6 sm:top-6 sm:h-11 sm:w-11"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
+            onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
+            onTouchEnd={(e) => {
+              if (touchStartX === null) return;
+              const endX = e.changedTouches[0]?.clientX ?? touchStartX;
+              const deltaX = endX - touchStartX;
+              setTouchStartX(null);
+              if (Math.abs(deltaX) < 42) return;
+              const dir = deltaX < 0 ? 1 : -1;
+              const step = isAr ? -dir : dir;
               setLightboxIndex(
-                (lightboxIndex - 1 + visibleItems.length) % visibleItems.length
+                (lightboxIndex + step + visibleItems.length) % visibleItems.length
               );
             }}
-            aria-label={isAr ? "السابق" : "Previous frame"}
-            className="absolute start-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg transition hover:scale-105 hover:bg-[var(--cavo-gold-deep)] hover:text-white sm:start-4 sm:flex"
+            className="cavo-fade-in fixed inset-0 z-[120] flex items-center justify-center bg-[#140f0b]/92 p-3 backdrop-blur-md sm:p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={activeLightbox.title[locale]}
           >
-            <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
-          </button>
-
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="cavo-zoom-in max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[26px] border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[32px] sm:p-3"
-          >
-            <div
-              onTouchStart={(e) => {
-                if (activeLightbox.mediaType === "video") {
-                  e.stopPropagation();
-                }
-              }}
-              onTouchEnd={(e) => {
-                if (activeLightbox.mediaType === "video") {
-                  e.stopPropagation();
-                }
-              }}
-              className="relative h-[52vh] w-full overflow-hidden rounded-[18px] bg-[#1a130d] sm:h-[58vh] sm:rounded-[22px]"
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              aria-label={isAr ? "إغلاق" : "Close lightbox"}
+              className="absolute end-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg transition hover:scale-105 hover:bg-[var(--cavo-gold-deep)] hover:text-white sm:end-6 sm:top-6 sm:h-11 sm:w-11"
             >
-              {activeLightbox.mediaType === "video" ? (
-                <div className="relative h-full w-full">
-                  <video
-                    key={`${activeLightbox.id}-${isMobileViewport ? "m" : "d"}`}
-                    ref={(el) => {
-                      lightboxVideoRef.current = el;
-                      if (!el || el.dataset.initPlay === "1") return;
-                      el.dataset.initPlay = "1";
-                      el.defaultMuted = true;
-                      el.muted = true;
-                      el.playsInline = true;
-                      el.setAttribute("muted", "");
-                      el.setAttribute("playsinline", "");
-                      el.setAttribute("webkit-playsinline", "true");
-                      const p = el.play();
-                      if (p && typeof p.then === "function") {
-                        p.then(() => {
-                          setLightboxVideoPlaying(true);
-                        }).catch(() => {});
-                      }
-                    }}
-                    src={withMediaVersion(
-                      isMobileViewport && activeLightbox.mobileSrc
-                        ? activeLightbox.mobileSrc
-                        : activeLightbox.src
-                    )}
-                    autoPlay
-                    muted
-                    loop
-                    controls
-                    playsInline
-                    preload="auto"
-                    onPlaying={() => setLightboxVideoPlaying(true)}
-                    onTimeUpdate={(e) => {
-                      if (e.currentTarget.currentTime > 0.03) {
-                        setLightboxVideoPlaying(true);
-                      }
-                    }}
-                    onPause={() => setLightboxVideoPlaying(false)}
-                    poster={withMediaVersion(
-                      isMobileViewport && activeLightbox.mobilePoster
-                        ? activeLightbox.mobilePoster
-                        : activeLightbox.poster
-                    )}
-                    className="h-full w-full object-contain"
-                  />
-                  {!lightboxVideoPlaying && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const vid = lightboxVideoRef.current;
-                        if (!vid) return;
-                        vid.playsInline = true;
-                        vid
-                          .play()
-                          .then(() => setLightboxVideoPlaying(true))
-                          .catch(() => {
-                            vid.defaultMuted = true;
-                            vid.muted = true;
-                            vid
-                              .play()
-                              .then(() => setLightboxVideoPlaying(true))
-                              .catch(() => {});
-                          });
-                      }}
-                      aria-label={isAr ? "تشغيل الفيديو" : "Play video"}
-                      className="pointer-events-auto absolute inset-0 z-10 flex items-center justify-center bg-black/20 transition hover:bg-black/30"
-                    >
-                      <span className="cavo-gold-gradient flex h-14 w-14 items-center justify-center rounded-full border border-white/50 text-white shadow-xl">
-                        <Play className="ms-0.5 h-6 w-6 fill-current" />
-                      </span>
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <Image
-                  src={activeLightbox.src}
-                  alt={activeLightbox.title[locale]}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 896px"
-                  className="object-contain"
-                />
-              )}
-            </div>
-            <div className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--cavo-gold-pale)] px-3 py-1 text-[11px] font-bold text-[var(--cavo-gold-deep)] sm:px-3.5 sm:text-xs">
-                  <Sparkles className="h-3 w-3 text-[var(--cavo-gold)]" />
-                  {activeLightbox.venueTag[locale]}
-                </span>
+              <X className="h-5 w-5" />
+            </button>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-xs font-bold text-[var(--cavo-smoke)]">
-                    {String(lightboxIndex + 1).padStart(2, "0")} /{" "}
-                    {String(visibleItems.length).padStart(2, "0")}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex(
+                  (lightboxIndex - 1 + visibleItems.length) % visibleItems.length
+                );
+              }}
+              aria-label={isAr ? "السابق" : "Previous frame"}
+              className="absolute start-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg transition hover:scale-105 hover:bg-[var(--cavo-gold-deep)] hover:text-white sm:start-4 sm:flex"
+            >
+              <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
+            </button>
+
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="cavo-zoom-in max-h-[92svh] w-full max-w-4xl overflow-y-auto rounded-[24px] border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[32px] sm:p-3"
+            >
+              <div
+                onTouchStart={(e) => {
+                  if (activeLightbox.mediaType === "video") {
+                    e.stopPropagation();
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  if (activeLightbox.mediaType === "video") {
+                    e.stopPropagation();
+                  }
+                }}
+                className="relative flex h-[50svh] w-full items-center justify-center overflow-hidden rounded-[18px] bg-[#1a130d] sm:h-[58svh] sm:rounded-[22px]"
+              >
+                {activeLightbox.mediaType === "video" ? (
+                  <div className="relative h-full w-full">
+                    <video
+                      key={`${activeLightbox.id}-${isMobileViewport ? "m" : "d"}`}
+                      ref={(el) => {
+                        lightboxVideoRef.current = el;
+                        if (!el || el.dataset.initPlay === "1") return;
+                        el.dataset.initPlay = "1";
+                        el.defaultMuted = true;
+                        el.muted = true;
+                        el.playsInline = true;
+                        el.setAttribute("muted", "");
+                        el.setAttribute("playsinline", "");
+                        el.setAttribute("webkit-playsinline", "true");
+                        const p = el.play();
+                        if (p && typeof p.then === "function") {
+                          p.then(() => {
+                            setLightboxVideoPlaying(true);
+                          }).catch(() => {});
+                        }
+                      }}
+                      src={withMediaVersion(
+                        isMobileViewport && activeLightbox.mobileSrc
+                          ? activeLightbox.mobileSrc
+                          : activeLightbox.src
+                      )}
+                      autoPlay
+                      muted
+                      loop
+                      controls
+                      playsInline
+                      preload="auto"
+                      onPlaying={() => setLightboxVideoPlaying(true)}
+                      onTimeUpdate={(e) => {
+                        if (e.currentTarget.currentTime > 0.03) {
+                          setLightboxVideoPlaying(true);
+                        }
+                      }}
+                      onPause={() => setLightboxVideoPlaying(false)}
+                      poster={withMediaVersion(
+                        isMobileViewport && activeLightbox.mobilePoster
+                          ? activeLightbox.mobilePoster
+                          : activeLightbox.poster
+                      )}
+                      className="h-full w-full object-contain"
+                    />
+                    {!lightboxVideoPlaying && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const vid = lightboxVideoRef.current;
+                          if (!vid) return;
+                          vid.playsInline = true;
+                          vid
+                            .play()
+                            .then(() => setLightboxVideoPlaying(true))
+                            .catch(() => {
+                              vid.defaultMuted = true;
+                              vid.muted = true;
+                              vid
+                                .play()
+                                .then(() => setLightboxVideoPlaying(true))
+                                .catch(() => {});
+                            });
+                        }}
+                        aria-label={isAr ? "تشغيل الفيديو" : "Play video"}
+                        className="pointer-events-auto absolute inset-0 z-10 flex items-center justify-center bg-black/20 transition hover:bg-black/30"
+                      >
+                        <span className="cavo-gold-gradient flex h-14 w-14 items-center justify-center rounded-full border border-white/50 text-white shadow-xl">
+                          <Play className="ms-0.5 h-6 w-6 fill-current" />
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {!lightboxImgLoaded && (
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                      >
+                        <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#e4c89e]/30 border-t-[#e4c89e]" />
+                      </div>
+                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      key={activeLightbox.src}
+                      ref={(el) => {
+                        if (el && el.complete && el.naturalWidth > 0) {
+                          setLightboxImgLoaded(true);
+                        }
+                      }}
+                      src={activeLightbox.src}
+                      alt={activeLightbox.title[locale]}
+                      loading="eager"
+                      decoding="async"
+                      onLoad={() => setLightboxImgLoaded(true)}
+                      onError={() => setLightboxImgLoaded(true)}
+                      className="relative z-10 h-full w-full object-contain"
+                    />
+                  </>
+                )}
+              </div>
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--cavo-gold-pale)] px-3 py-1 text-[11px] font-bold text-[var(--cavo-gold-deep)] sm:px-3.5 sm:text-xs">
+                    <Sparkles className="h-3 w-3 text-[var(--cavo-gold)]" />
+                    {activeLightbox.venueTag[locale]}
                   </span>
-                  <div className="flex items-center gap-1 sm:hidden">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setLightboxIndex(
-                          (lightboxIndex - 1 + visibleItems.length) %
-                            visibleItems.length
-                        )
-                      }
-                      aria-label={isAr ? "السابق" : "Previous"}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--cavo-border)] bg-white text-[var(--cavo-ink)]"
-                    >
-                      <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setLightboxIndex(
-                          (lightboxIndex + 1) % visibleItems.length
-                        )
-                      }
-                      aria-label={isAr ? "التالي" : "Next"}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--cavo-border)] bg-white text-[var(--cavo-ink)]"
-                    >
-                      <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-                    </button>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold text-[var(--cavo-smoke)]">
+                      {String(lightboxIndex + 1).padStart(2, "0")} /{" "}
+                      {String(visibleItems.length).padStart(2, "0")}
+                    </span>
+                    <div className="flex items-center gap-1 sm:hidden">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLightboxIndex(
+                            (lightboxIndex - 1 + visibleItems.length) %
+                              visibleItems.length
+                          )
+                        }
+                        aria-label={isAr ? "السابق" : "Previous"}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--cavo-border)] bg-white text-[var(--cavo-ink)]"
+                      >
+                        <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLightboxIndex(
+                            (lightboxIndex + 1) % visibleItems.length
+                          )
+                        }
+                        aria-label={isAr ? "التالي" : "Next"}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--cavo-border)] bg-white text-[var(--cavo-ink)]"
+                      >
+                        <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                <h3 className="font-display mt-2 text-xl font-semibold text-[var(--cavo-ink)] sm:text-3xl">
+                  {activeLightbox.title[locale]}
+                </h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-[var(--cavo-smoke)] sm:text-sm">
+                  {activeLightbox.caption[locale]}
+                </p>
               </div>
-
-              <h3 className="font-display mt-2 text-xl font-semibold text-[var(--cavo-ink)] sm:text-3xl">
-                {activeLightbox.title[locale]}
-              </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-[var(--cavo-smoke)] sm:text-sm">
-                {activeLightbox.caption[locale]}
-              </p>
             </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setLightboxIndex((lightboxIndex + 1) % visibleItems.length);
-            }}
-            aria-label={isAr ? "التالي" : "Next frame"}
-            className="absolute end-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg transition hover:scale-105 hover:bg-[var(--cavo-gold-deep)] hover:text-white sm:end-4 sm:flex"
-          >
-            <ChevronRight className="h-5 w-5 rtl:rotate-180" />
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((lightboxIndex + 1) % visibleItems.length);
+              }}
+              aria-label={isAr ? "التالي" : "Next frame"}
+              className="absolute end-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg transition hover:scale-105 hover:bg-[var(--cavo-gold-deep)] hover:text-white sm:end-4 sm:flex"
+            >
+              <ChevronRight className="h-5 w-5 rtl:rotate-180" />
+            </button>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

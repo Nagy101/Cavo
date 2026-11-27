@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -2040,35 +2041,39 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {/* FULLSCREEN HERO 4-TIMES-OF-DAY NILE TABLE LIGHTBOX MODAL (ZERO PRICES) */}
-      {heroLightboxOpen && (
-        <div
-          onClick={() => setHeroLightboxOpen(false)}
-          className="cavo-fade-in fixed inset-0 z-50 flex items-center justify-center bg-[#221a12]/90 p-3.5 backdrop-blur-xl"
-          role="dialog"
-          aria-modal="true"
-          aria-label={currentTimeChapter.title[locale]}
-        >
-          <button
-            type="button"
-            onClick={() => setHeroLightboxOpen(false)}
-            className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg"
-            aria-label={isAr ? "إغلاق" : "Close"}
-          >
-            <X className="h-5 w-5" />
-          </button>
-
+      {/* FULLSCREEN HERO 4-TIMES-OF-DAY NILE TABLE LIGHTBOX MODAL (ZERO PRICES) — Portaled */}
+      {heroLightboxOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="cavo-zoom-in max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[26px] border border-[var(--cavo-gold)]/45 bg-[#f8f6f2] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[30px] sm:p-4"
+            onClick={() => setHeroLightboxOpen(false)}
+            className="cavo-fade-in fixed inset-0 z-[120] flex items-center justify-center bg-[#221a12]/92 p-3.5 backdrop-blur-md"
+            role="dialog"
+            aria-modal="true"
+            aria-label={currentTimeChapter.title[locale]}
           >
-              <div className="relative h-[48vh] w-full overflow-hidden rounded-[18px] bg-[var(--cavo-stone)] sm:h-[56vh] sm:rounded-[22px]">
-                <Image
+            <button
+              type="button"
+              onClick={() => setHeroLightboxOpen(false)}
+              className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg"
+              aria-label={isAr ? "إغلاق" : "Close"}
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="cavo-zoom-in max-h-[92svh] w-full max-w-4xl overflow-y-auto rounded-[24px] border border-[var(--cavo-gold)]/45 bg-[#f8f6f2] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[30px] sm:p-4"
+            >
+              <div className="relative h-[48svh] w-full overflow-hidden rounded-[18px] bg-[var(--cavo-stone)] sm:h-[56svh] sm:rounded-[22px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={currentTimeChapter.image}
                   src={currentTimeChapter.image}
                   alt={currentTimeChapter.title[locale]}
-                  fill
-                  sizes="100vw"
-                  className="object-cover"
+                  loading="eager"
+                  decoding="async"
+                  className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#221a12]/70 via-transparent to-transparent" />
                 <span className="absolute start-3 top-3 rounded-full bg-[#f6f3ee]/95 px-3 py-1 text-[11px] font-bold text-[var(--cavo-gold-deep)] shadow-sm">
@@ -2106,9 +2111,10 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
                   ))}
                 </div>
               </div>
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

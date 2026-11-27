@@ -26,6 +26,7 @@ export function FadeUp({
   const [revealState, setRevealState] = useState<"idle" | "pending" | "shown">(
     "idle"
   );
+  const [effectiveDelay, setEffectiveDelay] = useState(0);
 
   useEffect(() => {
     const el = ref.current;
@@ -39,9 +40,13 @@ export function FadeUp({
       return;
     }
 
+    const isMobile = window.innerWidth < 768;
+    // Never add stagger lag on vertically stacked mobile cards; keep subtle crisp stagger on desktop rows.
+    setEffectiveDelay(isMobile ? 0 : Math.min(delay, 0.14));
+
     const rect = el.getBoundingClientRect();
-    // Elements already visible in the initial viewport stay visible immediately (zero LCP penalty)
-    if (rect.top < window.innerHeight * 0.94 && rect.bottom > 0) {
+    // Show immediately if already within or close to the initial viewport
+    if (rect.top < window.innerHeight + 120 && rect.bottom > 0) {
       setRevealState("shown");
       return;
     }
@@ -56,18 +61,19 @@ export function FadeUp({
         }
       },
       {
-        rootMargin: "0px 0px -6% 0px",
-        threshold: 0.06,
+        // Pre-trigger 180px BEFORE entering the viewport so cards are gliding in immediately as you scroll
+        rootMargin: "0px 0px 180px 0px",
+        threshold: 0,
       }
     );
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [delay]);
 
   const mergedStyle = {
     ...style,
-    ...(delay > 0 ? { "--reveal-delay": `${delay}s` } : {}),
+    ...(effectiveDelay > 0 ? { "--reveal-delay": `${effectiveDelay}s` } : {}),
   } as CSSProperties;
 
   return (

@@ -16,63 +16,18 @@ export const galleryCategories: {
 
 export const galleryItems: GalleryItem[] = [
   {
-    id: "cavo-welcome-lounge",
-    category: "place",
+    id: "main-evening-glow",
+    category: "after-dark",
     mediaType: "image",
-    src: "/media/hero/cavo-welcome-lounge.jpg",
-    venueTag: { en: "Main Restaurant", ar: "المطعم الرئيسي" },
+    src: "/media/hero/main-evening.jpg",
+    venueTag: { en: "Main Restaurant · Evening", ar: "المطعم الرئيسي · مساءً" },
     title: {
-      en: "A Quiet Corner Above the Nile",
-      ar: "جلسة هادية بإطلالة على النيل",
+      en: "Warm Backlit CAVO Architecture",
+      ar: "الإضاءة المعمارية الدافئة وشعار كافو",
     },
     caption: {
-      en: "Soft lounge seating, warm wood, and the CAVO signature beside the river.",
-      ar: "جلسات مريحة وخشب دافئ وشعار كافو على ضفة النيل.",
-    },
-  },
-  {
-    id: "cavo-lounge-evening",
-    category: "place",
-    mediaType: "image",
-    src: "/media/gallery/cavo-lounge-evening.jpg",
-    venueTag: { en: "Main Restaurant", ar: "المطعم الرئيسي" },
-    title: {
-      en: "A Softer View of the City",
-      ar: "إطلالة هادية على القاهرة",
-    },
-    caption: {
-      en: "A tucked-away riverside table framed by the boat's timber canopy.",
-      ar: "طاولة على النيل وسط تفاصيل المركب الخشبية الدافئة.",
-    },
-  },
-  {
-    id: "cavo-nile-room",
-    category: "place",
-    mediaType: "image",
-    src: "/media/hero/cavo-nile-room.jpg",
-    venueTag: { en: "Nile View", ar: "إطلالة النيل" },
-    title: {
-      en: "Room to Linger by the Water",
-      ar: "مساحة للراحة قدام النيل",
-    },
-    caption: {
-      en: "A sunlit CAVO lounge with the Zamalek riverfront just beyond the windows.",
-      ar: "جلسة كافو في ضوء النهار والنيل ظاهر من الشبابيك.",
-    },
-  },
-  {
-    id: "cavo-riverside-entry",
-    category: "place",
-    mediaType: "image",
-    src: "/media/gallery/cavo-riverside-entry.jpg",
-    venueTag: { en: "CAVO Island", ar: "كافو آيلاند" },
-    title: {
-      en: "A Warm Welcome on the River",
-      ar: "استقبال دافي على النيل",
-    },
-    caption: {
-      en: "A flower-covered pergola and CAVO's riverside entrance in daylight.",
-      ar: "مدخل كافو وسط الزهور وإطلالة مفتوحة على النيل.",
+      en: "Sculpted wave walls, warm lantern glow, and plush terracotta-and-ivory seating at dusk.",
+      ar: "الجدار المعماري المضيء مع الفوانيس الدافئة والجلسات الفاخرة وقت الغروب.",
     },
   },
   {
@@ -91,6 +46,21 @@ export const galleryItems: GalleryItem[] = [
     },
   },
   {
+    id: "cavo-riverside-entry",
+    category: "place",
+    mediaType: "image",
+    src: "/media/hero/cavo-welcome-arch.jpg",
+    venueTag: { en: "CAVO Island", ar: "كافو آيلاند" },
+    title: {
+      en: "A Warm Welcome on the River",
+      ar: "مدخل كافو وسط الزهور على النيل",
+    },
+    caption: {
+      en: "A flower-covered pergola and CAVO's iconic sculpted riverside entrance overlooking the Nile.",
+      ar: "مدخل كافو الأيقوني وسط الزهور والأجنحة البيضاء بإطلالة مفتوحة على النيل.",
+    },
+  },
+  {
     id: "nile-breakfast-table",
     category: "taste",
     mediaType: "image",
@@ -103,6 +73,36 @@ export const galleryItems: GalleryItem[] = [
     caption: {
       en: "Egyptian breakfast spreads, sunny-side eggs, warm bread, and brewed tea directly above the water.",
       ar: "تشكيلة الفطار المتكاملة مع الشاي الساخن والخبز الطازج وإطلالة المياه مباشرة.",
+    },
+  },
+  {
+    id: "boat-sunset-view",
+    category: "place",
+    mediaType: "image",
+    src: "/media/hero/boat-nile-sunset.jpg",
+    venueTag: { en: "Nile City Boat · Sunset", ar: "مركب نايل سيتي · الغروب" },
+    title: {
+      en: "Golden Hour Facing Cairo Tower",
+      ar: "ساعة الغروب أمام برج القاهرة",
+    },
+    caption: {
+      en: "Warm golden light and rippling Nile reflections across CAVO's riverfront decks in Zamalek.",
+      ar: "انعكاس شمس الغروب الذهبية على مياه النيل أمام طوابق كافو بالزمالك.",
+    },
+  },
+  {
+    id: "yacht-day-cruiser",
+    category: "moments",
+    mediaType: "image",
+    src: "/media/venues/private-yacht/yacht-exterior.jpg",
+    venueTag: { en: "Private Yacht", ar: "اليخت الخاص" },
+    title: {
+      en: "Yachts by Cavo Facing Cairo Tower",
+      ar: "يخت كافو الخاص أمام برج القاهرة",
+    },
+    caption: {
+      en: "Private Nile yacht charters cruising smoothly past Zamalek and Cairo Tower.",
+      ar: "رحلات اليخت الخاص من كافو تبحر بهدوء أمام الزمالك وبرج القاهرة.",
     },
   },
   {

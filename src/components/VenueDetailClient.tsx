@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -701,94 +702,100 @@ export function VenueDetailClient({
         </FadeUp>
       </div>
 
-      {/* FULLSCREEN LIGHTBOX MODAL */}
-      {lightboxIdx !== null && photos[lightboxIdx] && (
-        <div
-          onClick={() => setLightboxIdx(null)}
-          onTouchStart={(e) => {
-            touchStartXRef.current = e.touches[0]?.clientX ?? null;
-          }}
-          onTouchEnd={(e) => {
-            if (touchStartXRef.current === null) return;
-            const endX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
-            const deltaX = endX - touchStartXRef.current;
-            touchStartXRef.current = null;
-            if (Math.abs(deltaX) < 42) return;
-            const dir = deltaX < 0 ? 1 : -1;
-            const step = isAr ? -dir : dir;
-            setLightboxIdx(
-              (lightboxIdx + step + photos.length) % photos.length
-            );
-          }}
-          className="cavo-fade-in fixed inset-0 z-50 flex items-center justify-center bg-[#140f0b]/90 p-3 backdrop-blur-xl sm:p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <button
-            type="button"
-            onClick={() => setLightboxIdx(null)}
-            className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg"
-            aria-label={isAr ? "إغلاق" : "Close"}
-          >
-            <X className="h-5 w-5" />
-          </button>
-
+      {/* FULLSCREEN LIGHTBOX MODAL — Portaled into document.body */}
+      {lightboxIdx !== null &&
+        photos[lightboxIdx] &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="cavo-zoom-in max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[26px] border border-[var(--cavo-gold)]/45 bg-[#f8f6f2] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[30px] sm:p-4"
+            onClick={() => setLightboxIdx(null)}
+            onTouchStart={(e) => {
+              touchStartXRef.current = e.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartXRef.current === null) return;
+              const endX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
+              const deltaX = endX - touchStartXRef.current;
+              touchStartXRef.current = null;
+              if (Math.abs(deltaX) < 42) return;
+              const dir = deltaX < 0 ? 1 : -1;
+              const step = isAr ? -dir : dir;
+              setLightboxIdx(
+                (lightboxIdx + step + photos.length) % photos.length
+              );
+            }}
+            className="cavo-fade-in fixed inset-0 z-[120] flex items-center justify-center bg-[#140f0b]/92 p-3 backdrop-blur-md sm:p-4"
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="relative h-[50vh] w-full overflow-hidden rounded-[18px] bg-[#18120c] sm:h-[58vh] sm:rounded-[22px]">
-              <Image
-                src={photos[lightboxIdx].src}
-                alt={photos[lightboxIdx].alt[locale]}
-                fill
-                sizes="100vw"
-                className="object-contain"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setLightboxIdx(
-                    (lightboxIdx - 1 + photos.length) % photos.length
-                  )
-                }
-                className="absolute start-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#261e16]/75 text-white transition hover:bg-[var(--cavo-gold)]"
-                aria-label={isAr ? "السابق" : "Previous"}
-              >
-                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setLightboxIdx((lightboxIdx + 1) % photos.length)
-                }
-                className="absolute end-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#261e16]/75 text-white transition hover:bg-[var(--cavo-gold)]"
-                aria-label={isAr ? "التالي" : "Next"}
-              >
-                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setLightboxIdx(null)}
+              className="absolute end-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--cavo-gold)]/45 bg-[#f6f3ee] text-[var(--cavo-ink)] shadow-lg"
+              aria-label={isAr ? "إغلاق" : "Close"}
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3">
-              <div>
-                <span className="font-mono text-xs font-bold text-[var(--cavo-gold-deep)]">
-                  0{lightboxIdx + 1} / 0{photos.length} · {venue.name[locale]}
-                </span>
-                <p className="mt-0.5 text-xs font-medium text-[var(--cavo-ink)] sm:text-sm">
-                  {photos[lightboxIdx].alt[locale]}
-                </p>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="cavo-zoom-in max-h-[92svh] w-full max-w-4xl overflow-y-auto rounded-[24px] border border-[var(--cavo-gold)]/45 bg-[#f8f6f2] p-2.5 text-[var(--cavo-ink)] shadow-2xl sm:rounded-[30px] sm:p-4"
+            >
+              <div className="relative flex h-[50svh] w-full items-center justify-center overflow-hidden rounded-[18px] bg-[#18120c] sm:h-[58svh] sm:rounded-[22px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={photos[lightboxIdx].src}
+                  src={photos[lightboxIdx].src}
+                  alt={photos[lightboxIdx].alt[locale]}
+                  loading="eager"
+                  decoding="async"
+                  className="h-full w-full object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLightboxIdx(
+                      (lightboxIdx - 1 + photos.length) % photos.length
+                    )
+                  }
+                  className="absolute start-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#261e16]/75 text-white transition hover:bg-[var(--cavo-gold)]"
+                  aria-label={isAr ? "السابق" : "Previous"}
+                >
+                  <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLightboxIdx((lightboxIdx + 1) % photos.length)
+                  }
+                  className="absolute end-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#261e16]/75 text-white transition hover:bg-[var(--cavo-gold)]"
+                  aria-label={isAr ? "التالي" : "Next"}
+                >
+                  <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+                </button>
               </div>
 
-              <Link
-                href={localePath(locale, `book?venue=${venue.slug}`)}
-                className="cavo-btn-gold shrink-0 rounded-full px-5 py-2 text-xs font-semibold"
-              >
-                {isAr ? "احجز الآن" : "Book Now"}
-              </Link>
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3">
+                <div>
+                  <span className="font-mono text-xs font-bold text-[var(--cavo-gold-deep)]">
+                    0{lightboxIdx + 1} / 0{photos.length} · {venue.name[locale]}
+                  </span>
+                  <p className="mt-0.5 text-xs font-medium text-[var(--cavo-ink)] sm:text-sm">
+                    {photos[lightboxIdx].alt[locale]}
+                  </p>
+                </div>
+
+                <Link
+                  href={localePath(locale, `book?venue=${venue.slug}`)}
+                  className="cavo-btn-gold shrink-0 rounded-full px-5 py-2 text-xs font-semibold"
+                >
+                  {isAr ? "احجز الآن" : "Book Now"}
+                </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

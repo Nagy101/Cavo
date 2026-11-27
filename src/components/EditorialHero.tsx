@@ -23,30 +23,19 @@ const heroScenes = [
   {
     id: "pergola-day",
     venueSlug: "main-restaurant",
-    src: "/media/hero/cavo-nile-room.jpg",
+    src: "/media/hero/main-day.jpg",
     badge: { en: "01 · Main Restaurant", ar: "01 · المطعم الرئيسي" },
     title: {
-      en: "A CAVO lounge with a wide Nile view",
-      ar: "جلسات كافو بإطلالة واسعة على النيل",
+      en: "Sunlit Timber Pergola & Bouclé Lounges",
+      ar: "البرجولا الخشبية المشمسة وجلسات البوكليه الفاخرة",
     },
     time: { en: "Morning & Daytime", ar: "إشراقة الصباح والنهار" },
-  },
-  {
-    id: "terrace-edge",
-    venueSlug: "boat",
-    src: "/media/hero/main-terrace.jpg",
-    badge: { en: "02 · Nile-Edge Terrace", ar: "02 · تراس ضفة النيل" },
-    title: {
-      en: "Artisanal Morning Spreads Directly Above the Water",
-      ar: "مائدة الفطار الصباحي مباشرة على صفحة النيل",
-    },
-    time: { en: "From 8:00 AM Daily", ar: "يومياً من 8:00 صباحاً" },
   },
   {
     id: "golden-dusk",
     venueSlug: "elite",
     src: "/media/hero/main-evening.jpg",
-    badge: { en: "03 · Golden Dusk Glow", ar: "03 · توهّج المساء الدافئ" },
+    badge: { en: "02 · Golden Dusk Glow", ar: "02 · توهّج المساء الدافئ" },
     title: {
       en: "Warm Backlit Architecture & Evening Hospitality",
       ar: "الإضاءة المعمارية الدافئة وأمسيات الزمالك الراقية",
@@ -54,13 +43,24 @@ const heroScenes = [
     time: { en: "Sunset to 4:00 AM", ar: "من الغروب حتى 4:00 فجراً" },
   },
   {
+    id: "boat-sunset",
+    venueSlug: "boat",
+    src: "/media/hero/boat-nile-sunset.jpg",
+    badge: { en: "03 · Nile-Edge Boat", ar: "03 · المركب على النيل" },
+    title: {
+      en: "Open-Air Sunset Decks Facing Cairo Tower",
+      ar: "جلسات المركب المفتوحة وقت الغروب أمام برج القاهرة",
+    },
+    time: { en: "From 8:00 AM Daily", ar: "يومياً من 8:00 صباحاً" },
+  },
+  {
     id: "private-yacht",
     venueSlug: "private-yacht",
-    src: "/media/venues/private-yacht/yacht-night-dinner.jpg",
+    src: "/media/hero/boat-nile-night.jpg",
     badge: { en: "04 · Yachts by Cavo", ar: "04 · اليخت الخاص" },
     title: {
-      en: "Private Nile Charters Facing Cairo Tower",
-      ar: "رحلات اليخت الخاص بإطلالة بانورامية على برج القاهرة",
+      en: "Illuminated Nile Nights & Private Charters",
+      ar: "ليالي النيل المضيئة ورحلات اليخت الخاص",
     },
     time: { en: "Bespoke Private Cruises", ar: "رحلات ومناسبات خاصة" },
   },

@@ -369,38 +369,32 @@ body {
   animation: cavoFloat 5s ease-in-out infinite;
 }
 
-/* Universal 60fps GPU Scroll Reveal (works on iOS Safari, Android, WebViews & Desktop; never hides SSR LCP) */
-.cavo-reveal {
-  will-change: transform, opacity;
-}
-
+/* Universal 60fps GPU Scroll Reveal (pre-triggers early so cards never lag behind scrolling) */
 .cavo-reveal[data-reveal="pending"] {
   opacity: 0;
-  transform: translate3d(0, 28px, 0) scale(0.985);
+  transform: translate3d(0, 14px, 0);
 }
 
 .cavo-reveal[data-reveal="shown"] {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: translate3d(0, 0, 0);
   transition:
-    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0s),
-    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0s);
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0s),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0s);
 }
 
-/* Gentle page-to-page motion shared by every locale route. */
+/* Gentle opacity-only page transition (never creates a transform containing block that traps fixed/sticky children) */
 @keyframes cavoPageEnter {
   from {
     opacity: 0;
-    transform: translate3d(0, 12px, 0);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
 .cavo-page-enter {
-  animation: cavoPageEnter 0.42s var(--cavo-ease) both;
+  animation: cavoPageEnter 0.28s ease-out both;
 }
 
 @keyframes cavoWelcomeCopy {

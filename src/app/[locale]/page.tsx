@@ -104,15 +104,15 @@ export default async function HomePage({
             <div className="grid lg:grid-cols-2">
               <div className="relative min-h-[260px] overflow-hidden sm:min-h-[380px]">
                 <Image
-                  src="/media/venues/private-yacht/yacht-night-dinner.jpg"
+                  src="/media/venues/private-yacht/yacht-exterior.jpg"
                   alt={
                     isAr
-                      ? "عشاء على يخت كافو الخاص على النيل"
-                      : "Private dinner aboard a CAVO yacht on the Nile"
+                      ? "اليخت الخاص من كافو أمام برج القاهرة على النيل"
+                      : "Yachts by Cavo gliding along the Nile facing Cairo Tower"
                   }
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1b130d]/55 to-transparent lg:bg-gradient-to-r" />
                 <div className="absolute bottom-4 start-4 rounded-full border border-white/35 bg-[#1b130d]/55 px-3.5 py-1.5 text-xs font-medium text-white backdrop-blur-md sm:bottom-6 sm:start-6">
