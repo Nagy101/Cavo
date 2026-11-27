@@ -1,12 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowRight, Play, Sparkles, Volume2, VolumeX } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import Image from "next/image";
+import { ArrowRight, Play, Sparkles, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
+import { WELCOME_PHOTO, WELCOME_SEEN_KEY } from "@/lib/intro";
 
-// Plays once whenever the user opens/refreshes the website,
-// and won't re-trigger during internal client-side link navigation.
-let hasPlayedIntroOnThisLoad = false;
+type IntroMode = "welcome" | "film" | null;
+
+const WELCOME_DURATION_MS = 4800;
+const WELCOME_EXIT_MS = 650;
+const MOBILE_VIDEO_SRC = "/media/video/cavo-official-intro-mobile.mp4?v=9";
+const DESKTOP_VIDEO_SRC = "/media/video/cavo-official-intro.mp4?v=9";
+const MOBILE_POSTER_SRC = "/media/video/cavo-official-poster-mobile.jpg?v=9";
+const DESKTOP_POSTER_SRC = "/media/video/cavo-official-poster.jpg?v=9";
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function triggerCavoIntroReplay() {
   if (typeof window !== "undefined") {
@@ -21,7 +39,6 @@ export function WatchIntroFilmButton({
   locale: Locale;
   className?: string;
 }) {
-  const isAr = locale === "ar";
   return (
     <button
       type="button"
@@ -32,369 +49,438 @@ export function WatchIntroFilmButton({
       }
     >
       <Play className="h-3.5 w-3.5 fill-current" />
-      <span>{isAr ? "شاهد فيلم كافو الرسمي" : "Watch Official Film"}</span>
+      <span>{locale === "ar" ? "شاهد فيلم كافو" : "Watch the CAVO film"}</span>
     </button>
   );
 }
 
-const TITLE_REVEAL_AFTER_PLAY_MS = 1500;
-const TITLE_FALLBACK_MS = 2400;
-const PLAYBACK_WINDOW_MS = 6000;
-const SAFETY_MAX_WAIT_MS = 12000;
-
-const MOBILE_VIDEO_SRC = "/media/video/cavo-official-intro-mobile.mp4?v=8";
-const DESKTOP_VIDEO_SRC = "/media/video/cavo-official-intro.mp4?v=8";
-const MOBILE_POSTER_SRC = "/media/video/cavo-official-poster-mobile.jpg?v=8";
-const DESKTOP_POSTER_SRC = "/media/video/cavo-official-poster.jpg?v=8";
-
-// Module-level constants so React hydration & re-renders NEVER touch or reset the live <video> node
-const STATIC_VIDEO_STAGE_HTML = {
-  __html:
-    '<video id="cavo-intro-video" autoplay muted playsinline webkit-playsinline="true" preload="auto" class="h-full w-full bg-transparent object-cover object-center"></video>',
-};
-
-// Executes synchronously at 0ms during HTML parsing (before React bundles download):
-// downloads ONLY the matching device video (1.3 MB on mobile instead of 8.7 MB dual videos)
-// and begins muted inline playback immediately on initial page open.
-const STATIC_BOOT_SCRIPT_HTML = {
-  __html: `(function(){var v=document.getElementById('cavo-intro-video');if(!v)return;var m=window.matchMedia('(max-width: 767px)').matches;v.defaultMuted=true;v.muted=true;v.playsInline=true;v.autoplay=true;v.setAttribute('muted','');v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','true');if(!v.getAttribute('src')){v.src=m?'${MOBILE_VIDEO_SRC}':'${DESKTOP_VIDEO_SRC}';var p=v.play();if(p&&p.catch)p.catch(function(){});}})();`,
-};
-
 export function CavoWelcomeIntro({ locale }: { locale: Locale }) {
   const isAr = locale === "ar";
-  const [visible, setVisible] = useState(() => !hasPlayedIntroOnThisLoad);
-  const [showWelcomeText, setShowWelcomeText] = useState(false);
-  const [closing, setClosing] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [playbackStarted, setPlaybackStarted] = useState(false);
-  const [runId, setRunId] = useState(0);
-
-  const stageRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const closingRef = useRef(false);
+  const closeTimerRef = useRef<number | null>(null);
+  const [mode, setMode] = useState<IntroMode>(null);
+  const [ready, setReady] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [playbackFailed, setPlaybackFailed] = useState(false);
 
-  const getVideoElement = (): HTMLVideoElement | null => {
-    return (
-      stageRef.current?.querySelector("video") ??
-      (typeof document !== "undefined"
-        ? (document.getElementById("cavo-intro-video") as HTMLVideoElement | null)
-        : null)
-    );
-  };
-
-  const triggerDismiss = () => {
+  const dismissWelcome = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
-    hasPlayedIntroOnThisLoad = true;
     setClosing(true);
-    window.setTimeout(() => {
-      setVisible(false);
+    closeTimerRef.current = window.setTimeout(() => {
+      setMode(null);
       setClosing(false);
+      setReady(false);
       closingRef.current = false;
-    }, 850);
-  };
-
-  const toggleSound = () => {
-    const vid = getVideoElement();
-    if (!vid) return;
-    const nextMuted = !vid.muted;
-    vid.muted = nextMuted;
-    setIsMuted(nextMuted);
-    if (vid.paused) {
-      vid.play().catch(() => {});
-    }
-  };
-
-  // Allow re-opening the intro film anytime from the Hero/Gallery "Watch Film" button
-  useEffect(() => {
-    const onReplay = () => {
-      closingRef.current = false;
-      setShowWelcomeText(false);
-      setClosing(false);
-      setIsMuted(true);
-      setPlaybackStarted(false);
-      setRunId((prev) => prev + 1);
-      setVisible(true);
-    };
-    window.addEventListener("cavo:replay-intro", onReplay);
-    return () => window.removeEventListener("cavo:replay-intro", onReplay);
+    }, WELCOME_EXIT_MS);
   }, []);
 
-  // Coordinate video lifecycle without resetting initial 0ms boot stream
   useEffect(() => {
-    if (!visible) return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const vid = getVideoElement();
-    const mql = window.matchMedia("(max-width: 767px)");
-
-    const markPlaying = () => {
-      setPlaybackStarted(true);
-    };
-
-    const onTimeUpdate = () => {
-      if (vid && vid.currentTime > 0.02) {
-        setPlaybackStarted(true);
+    return () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
       }
     };
+  }, []);
 
-    const tryResumeIfPaused = () => {
-      if (!vid) return;
-      if (!vid.paused && vid.currentTime > 0) {
-        setPlaybackStarted(true);
-        return;
-      }
-      if (vid.paused) {
-        vid.defaultMuted = true;
-        vid.muted = true;
-        vid.play().catch(() => {});
-      }
-    };
-
-    const onEnded = () => {
-      triggerDismiss();
-    };
-
-    if (vid) {
-      vid.defaultMuted = true;
-      vid.muted = true;
-      vid.playsInline = true;
-
-      const wantSrc = mql.matches ? MOBILE_VIDEO_SRC : DESKTOP_VIDEO_SRC;
-      const currentAttr = vid.getAttribute("src") || "";
-
-      if (!currentAttr || !currentAttr.includes(mql.matches ? "-mobile.mp4" : "intro.mp4")) {
-        vid.src = wantSrc;
-      } else if (runId > 0) {
-        // Only seek back to 0:00 on manual "Watch Film" replay — NEVER interrupt initial open!
-        vid.currentTime = 0;
-      }
-
-      vid.addEventListener("playing", markPlaying);
-      vid.addEventListener("timeupdate", onTimeUpdate);
-      vid.addEventListener("loadedmetadata", tryResumeIfPaused);
-      vid.addEventListener("loadeddata", tryResumeIfPaused);
-      vid.addEventListener("canplay", tryResumeIfPaused);
-      vid.addEventListener("ended", onEnded);
-
-      // Check if 0ms inline boot script already started playing before React hydrated
-      if (!vid.paused && vid.currentTime > 0.02) {
-        setPlaybackStarted(true);
-      } else if (vid.paused) {
-        vid.play().catch(() => {});
-      }
+  // Synchronously mount the welcome intro before paint so the homepage never flashes first.
+  useIsomorphicLayoutEffect(() => {
+    const cleanPath = pathname.replace(/\/+$/, "");
+    if (cleanPath !== `/${locale}`) {
+      delete document.documentElement.dataset.cavoIntro;
+      return;
     }
 
-    const fallbackTitleTimer = window.setTimeout(() => {
-      setShowWelcomeText(true);
-    }, TITLE_FALLBACK_MS);
+    const pendingFromBoot =
+      document.documentElement.dataset.cavoIntro === "pending";
+    let alreadySeen = false;
+    try {
+      alreadySeen = Boolean(window.sessionStorage.getItem(WELCOME_SEEN_KEY));
+    } catch {
+      alreadySeen = false;
+    }
 
-    const safetyCloseTimer = window.setTimeout(() => {
-      triggerDismiss();
-    }, SAFETY_MAX_WAIT_MS);
+    if (!pendingFromBoot && alreadySeen) {
+      delete document.documentElement.dataset.cavoIntro;
+      return;
+    }
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-        triggerDismiss();
+    try {
+      window.sessionStorage.setItem(WELCOME_SEEN_KEY, "1");
+    } catch {
+      // Keep the first-visit welcome available when storage is restricted.
+    }
+    setMode("welcome");
+  }, [locale, pathname]);
+
+  // Remove the pre-paint boot veil once our z-[100] intro overlay is safely painted on screen.
+  useEffect(() => {
+    if (mode !== "welcome") return;
+    const raf = window.requestAnimationFrame(() => {
+      delete document.documentElement.dataset.cavoIntro;
+    });
+    // Fallback ensures animations always kick off smoothly even on slow connections.
+    const fallback = window.setTimeout(() => setReady(true), 240);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(fallback);
+    };
+  }, [mode]);
+
+  useEffect(() => {
+    const openFilm = () => {
+      closingRef.current = false;
+      setClosing(false);
+      setPlaybackFailed(false);
+      setMode("film");
+    };
+    window.addEventListener("cavo:replay-intro", openFilm);
+    return () => window.removeEventListener("cavo:replay-intro", openFilm);
+  }, []);
+
+  // Start the auto-dismiss countdown only once the image is decoded and animations begin.
+  useEffect(() => {
+    if (mode !== "welcome" || !ready) return;
+    const timer = window.setTimeout(dismissWelcome, WELCOME_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [mode, ready, dismissWelcome]);
+
+  useEffect(() => {
+    if (!mode) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (mode === "welcome") dismissWelcome();
+        else setMode(null);
       }
     };
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = prevOverflow;
-      if (vid) {
-        vid.removeEventListener("playing", markPlaying);
-        vid.removeEventListener("timeupdate", onTimeUpdate);
-        vid.removeEventListener("loadedmetadata", tryResumeIfPaused);
-        vid.removeEventListener("loadeddata", tryResumeIfPaused);
-        vid.removeEventListener("canplay", tryResumeIfPaused);
-        vid.removeEventListener("ended", onEnded);
-      }
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
-      window.clearTimeout(fallbackTitleTimer);
-      window.clearTimeout(safetyCloseTimer);
     };
-  }, [visible, runId]);
+  }, [mode, dismissWelcome]);
 
-  // Start the 6-second cinema showcase window ONLY after video frames actually begin playing
   useEffect(() => {
-    if (!visible || !playbackStarted) return;
+    if (mode !== "film") return;
 
-    const revealTimer = window.setTimeout(() => {
-      setShowWelcomeText(true);
-    }, TITLE_REVEAL_AFTER_PLAY_MS);
-
-    const playbackCloseTimer = window.setTimeout(() => {
-      triggerDismiss();
-    }, PLAYBACK_WINDOW_MS);
+    const video = videoRef.current;
+    if (!video) return;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    video.src = isMobile ? MOBILE_VIDEO_SRC : DESKTOP_VIDEO_SRC;
+    video.poster = isMobile ? MOBILE_POSTER_SRC : DESKTOP_POSTER_SRC;
+    video.load();
+    video.play().catch(() => setPlaybackFailed(true));
 
     return () => {
-      window.clearTimeout(revealTimer);
-      window.clearTimeout(playbackCloseTimer);
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
     };
-  }, [visible, playbackStarted, runId]);
+  }, [mode]);
 
-  if (!visible) return null;
+  const handleImageReady = useCallback(() => {
+    // Double rAF guarantees the decoded image is uploaded to the GPU before motion starts.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        setReady(true);
+      });
+    });
+  }, []);
+
+  if (!mode) return null;
+
+  if (mode === "welcome") {
+    return (
+      <section
+        className={`fixed inset-0 z-[100] flex h-[100svh] flex-col justify-between overflow-hidden bg-[#120d09] text-white transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          closing
+            ? "pointer-events-none -translate-y-3 scale-[1.02] opacity-0"
+            : "translate-y-0 scale-100 opacity-100"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isAr ? "أهلاً بكم في كافو آيلاند" : "Welcome to CAVO Island"}
+      >
+        {/* Lightweight pure-CSS ambient glow (zero expensive full-screen blur filters) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 68% 46% at 50% 37%, rgba(217, 174, 122, 0.2) 0%, rgba(164, 98, 92, 0.08) 38%, rgba(18, 13, 9, 0.94) 72%, #120d09 100%)",
+          }}
+        />
+
+        {/* Subtle perimeter architectural framing line */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-3 rounded-[22px] border border-[#e4c89e]/14 sm:inset-5 sm:rounded-[30px]"
+        />
+
+        {/* Top Bar */}
+        <header
+          style={{ "--d": "0.1s" } as CSSProperties}
+          className={`relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 pt-6 sm:px-10 sm:pt-9 ${
+            ready ? "cavo-welcome-copy" : "opacity-0"
+          }`}
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#e4c89e]/28 bg-[#1a130d]/85 px-3.5 py-1.5 text-[10px] font-semibold text-[#f5e6cf] sm:px-4 sm:py-2 sm:text-xs">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#e4c89e]" />
+            <span className={isAr ? "" : "uppercase tracking-[0.2em]"}>
+              {isAr
+                ? "مركب نايل سيتي · الزمالك"
+                : "NILE CITY BOAT · ZAMALEK"}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={dismissWelcome}
+            className="rounded-full border border-white/25 bg-[#1a130d]/80 px-4 py-1.5 text-xs font-semibold text-[#f7ecdc] transition duration-300 hover:border-[#e4c89e]/60 hover:bg-white/10 sm:px-5 sm:py-2"
+          >
+            {isAr ? "تخطي" : "Skip"}
+          </button>
+        </header>
+
+        {/* Center Editorial Stage: Archway Portal + Masked Typography */}
+        <div className="relative z-20 mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 py-2 sm:px-8">
+          {/* Sculpted Double-Border Archway Portal */}
+          <div
+            className={`relative w-[min(90vw,640px,calc(43svh*1.5))] aspect-[3/2] rounded-[24px] border border-[#e4c89e]/32 bg-[#1d150e]/85 p-1.5 shadow-[0_32px_80px_-24px_rgba(0,0,0,0.85)] sm:rounded-[32px] sm:p-2 ${
+              ready ? "cavo-portal-reveal" : "opacity-0"
+            }`}
+          >
+            <div className="relative h-full w-full overflow-hidden rounded-[19px] bg-[#1a120c] sm:rounded-[25px]">
+              <Image
+                src={WELCOME_PHOTO}
+                alt={
+                  isAr
+                    ? "مدخل كافو آيلاند بالزهور وإطلالة النيل في الزمالك"
+                    : "CAVO Island flower-draped archway overlooking the Nile in Zamalek"
+                }
+                fill
+                priority
+                unoptimized
+                onLoad={handleImageReady}
+                sizes="(max-width: 640px) 90vw, 640px"
+                className={`object-cover object-center ${
+                  ready ? "cavo-portal-drift" : "scale-[1.13]"
+                }`}
+              />
+
+              {/* GPU-composited dark veil lifting smoothly off the image */}
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-0 bg-[#120d09] ${
+                  ready ? "cavo-portal-veil" : "opacity-60"
+                }`}
+              />
+
+              {/* Subtle top & bottom cinema melt so the archway blends seamlessly into the typography */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#120d09]/35 to-transparent"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-[#120d09] via-[#120d09]/55 to-transparent"
+              />
+
+              {/* One-shot champagne sheen sweep across the portal glass */}
+              {ready && (
+                <div
+                  aria-hidden="true"
+                  className="cavo-portal-sheen pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-[#fff3db]/26 to-transparent"
+                />
+              )}
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-[19px] ring-1 ring-inset ring-white/15 sm:rounded-[25px]"
+              />
+            </div>
+          </div>
+
+          {/* Layered Editorial Typography rising cleanly out of masks */}
+          <div className="relative z-20 -mt-7 flex max-w-2xl flex-col items-center text-center sm:-mt-10">
+            {/* Golden hairline + Welcome eyebrow */}
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
+              <span
+                aria-hidden="true"
+                style={{ "--d": "0.32s" } as CSSProperties}
+                className={`h-px w-8 bg-gradient-to-r from-transparent to-[#e4c89e]/80 sm:w-14 ${
+                  ready ? "cavo-line-expand" : "opacity-0"
+                }`}
+              />
+              <div className="overflow-hidden">
+                <p
+                  style={{ "--d": "0.36s" } as CSSProperties}
+                  className={`font-semibold text-[#ecd3ae] ${
+                    ready ? "cavo-mask-rise" : "opacity-0"
+                  } ${
+                    isAr
+                      ? "text-xs sm:text-sm"
+                      : "text-[10px] uppercase tracking-[0.34em] sm:text-xs"
+                  }`}
+                >
+                  {isAr ? "أهلاً بكم في" : "WELCOME TO"}
+                </p>
+              </div>
+              <span
+                aria-hidden="true"
+                style={{ "--d": "0.32s" } as CSSProperties}
+                className={`h-px w-8 bg-gradient-to-l from-transparent to-[#e4c89e]/80 sm:w-14 ${
+                  ready ? "cavo-line-expand" : "opacity-0"
+                }`}
+              />
+            </div>
+
+            {/* Monumental Brand Title */}
+            <div className="mt-1.5 overflow-hidden px-2 py-1 sm:mt-2">
+              <h2
+                style={{ "--d": "0.48s" } as CSSProperties}
+                className={`font-display font-semibold tracking-tight ${
+                  ready ? "cavo-mask-rise" : "opacity-0"
+                } ${
+                  isAr
+                    ? "text-[2.65rem] leading-[1.18] sm:text-6xl lg:text-[4.4rem]"
+                    : "text-[2.95rem] italic leading-[1.02] sm:text-6xl lg:text-[4.75rem]"
+                }`}
+              >
+                <span className="inline-block bg-gradient-to-r from-[#fff8ec] via-[#e2c08e] to-[#fff5e4] bg-clip-text text-transparent drop-shadow-[0_10px_24px_rgba(0,0,0,0.55)]">
+                  {isAr ? "كافو آيلاند" : "CAVO Island"}
+                </span>
+              </h2>
+            </div>
+
+            {/* Poetic Tagline */}
+            <div className="mt-1.5 overflow-hidden sm:mt-2">
+              <p
+                style={{ "--d": "0.66s" } as CSSProperties}
+                className={`max-w-md text-xs font-medium leading-relaxed text-[#f1e6d6]/85 sm:text-base ${
+                  ready ? "cavo-mask-rise" : "opacity-0"
+                }`}
+              >
+                {isAr
+                  ? "القاهرة، من منظور أهدأ وأرقى على ضفة النيل."
+                  : "Cairo, from a calmer view on the Nile."}
+              </p>
+            </div>
+
+            {/* Refined CTA */}
+            <div
+              style={{ "--d": "0.82s" } as CSSProperties}
+              className={`mt-4 sm:mt-5 ${
+                ready ? "cavo-welcome-copy" : "opacity-0"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={dismissWelcome}
+                className={`cavo-btn-gold group inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-full px-7 py-2.5 text-xs font-semibold ring-1 ring-[#e8cfa8]/40 sm:min-h-[48px] sm:px-9 sm:py-3 ${
+                  isAr ? "" : "uppercase tracking-[0.2em]"
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-[#f4dec0]" />
+                <span>{isAr ? "ادخل كافو" : "STEP INSIDE"}</span>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Cinema Progress Hairline */}
+        <footer
+          style={{ "--d": "0.24s" } as CSSProperties}
+          className={`relative z-20 mx-auto flex flex-col items-center gap-2 pb-6 sm:pb-8 ${
+            ready ? "cavo-welcome-copy" : "opacity-0"
+          }`}
+        >
+          <div className="h-[2px] w-36 overflow-hidden rounded-full bg-white/15 sm:w-48">
+            {ready && (
+              <div
+                style={
+                  { "--prog-dur": `${WELCOME_DURATION_MS}ms` } as CSSProperties
+                }
+                className="cavo-progress-fill h-full w-full rounded-full bg-gradient-to-r from-[#b89566] via-[#f4ddb9] to-[#c7a575]"
+              />
+            )}
+          </div>
+        </footer>
+      </section>
+    );
+  }
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col justify-between overflow-hidden bg-[#0c0906] text-white select-none transition-all duration-[850ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-        closing
-          ? "pointer-events-none scale-[1.05] opacity-0 blur-[10px]"
-          : "scale-100 opacity-100"
-      }`}
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#100c08]/95 p-3 text-white backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to CAVO Island Intro"
+      aria-label={isAr ? "فيلم كافو" : "CAVO film"}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) setMode(null);
+      }}
     >
-      {/* FULL-BLEED OFFICIAL CAVO VIDEO */}
-      <div className="absolute inset-0 overflow-hidden bg-[#0c0906]">
-        {/* Art-directed SSR poster underneath transparent <video>: 0ms portrait on mobile, 0ms widescreen on desktop */}
-        <picture className="pointer-events-none absolute inset-0 h-full w-full">
-          <source media="(max-width: 767px)" srcSet={MOBILE_POSTER_SRC} />
-          <img
-            src={DESKTOP_POSTER_SRC}
-            alt=""
-            fetchPriority="high"
-            decoding="sync"
-            className="h-full w-full object-cover object-center"
+      <div className="relative my-auto w-full max-w-5xl rounded-[22px] border border-[#d6bc96]/35 bg-[#211811] p-2.5 shadow-2xl sm:rounded-[30px] sm:p-4">
+        <div className="mb-2 flex items-center justify-between gap-3 px-1 sm:mb-3 sm:px-2">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d6bc96]">
+              CAVO · ZAMALEK
+            </p>
+            <h2 className="font-display mt-0.5 text-lg font-semibold sm:text-2xl">
+              {isAr ? "لحظة على النيل" : "A moment on the Nile"}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMode(null)}
+            aria-label={isAr ? "إغلاق الفيديو" : "Close video"}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white transition hover:bg-white/15"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mx-auto aspect-[9/16] max-h-[72svh] w-full max-w-[380px] overflow-hidden rounded-[16px] bg-black sm:aspect-video sm:max-h-[72vh] sm:max-w-none sm:rounded-[22px]">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            controls
+            preload="none"
+            onError={() => setPlaybackFailed(true)}
+            onPlaying={() => setPlaybackFailed(false)}
+            className="h-full w-full object-contain"
           />
-        </picture>
-
-        <div
-          key={runId}
-          ref={stageRef}
-          suppressHydrationWarning
-          className="relative z-[1] h-full w-full"
-          dangerouslySetInnerHTML={STATIC_VIDEO_STAGE_HTML}
-        />
-        <script dangerouslySetInnerHTML={STATIC_BOOT_SCRIPT_HTML} />
-      </div>
-
-      {/* DYNAMIC CINEMA VIGNETTE: Ultra-clear at start, softly deepens when Welcome title descends */}
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-[1600ms] ease-out ${
-          showWelcomeText ? "opacity-100" : "opacity-35"
-        }`}
-        style={{
-          background:
-            "radial-gradient(circle at 50% 50%, rgba(12,9,6,0.48) 0%, rgba(12,9,6,0.72) 100%)",
-        }}
-      />
-
-      {/* Subtle Architectural Gold Hairline Frame */}
-      <div className="pointer-events-none absolute inset-3 z-20 rounded-[22px] border border-[#d6bc96]/25 sm:inset-5 sm:rounded-[32px]" />
-
-      {/* MINIMAL TOP BAR: Sound Toggle & Skip Button */}
-      <div className="relative z-30 mx-auto flex w-full max-w-7xl items-center justify-between px-5 pt-5 sm:px-10 sm:pt-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#16100b]/55 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#f0dec2] backdrop-blur-md sm:text-xs">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#e5caa4] opacity-80" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#e5caa4]" />
-          </span>
-          <span>CAVO · ZAMALEK</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleSound}
-            aria-label={
-              isMuted
-                ? isAr
-                  ? "تشغيل الصوت"
-                  : "Unmute audio"
-                : isAr
-                  ? "كتم الصوت"
-                  : "Mute audio"
-            }
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-[#16100b]/60 text-[#f0dec2] backdrop-blur-md transition hover:border-[#d6bc96] hover:bg-[#2a1f16]"
-          >
-            {isMuted ? (
-              <VolumeX className="h-4 w-4 text-[#e5caa4]" />
-            ) : (
-              <Volume2 className="h-4 w-4 text-[#e5caa4]" />
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={triggerDismiss}
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-white/25 bg-[#16100b]/60 px-4 py-1.5 text-xs font-semibold text-[#f5ece0] backdrop-blur-md transition hover:border-[#d6bc96] hover:bg-[var(--cavo-gold-deep)] hover:text-white"
-          >
-            <span>{isAr ? "تخطي" : "Skip"}</span>
-            <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
-          </button>
-        </div>
-      </div>
-
-      {/* CENTER STAGE: "Welcome to CAVO Island" gently descends from above */}
-      <div className="relative z-30 mx-auto flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <div
-          className={`flex flex-col items-center transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            showWelcomeText
-              ? "translate-y-0 scale-100 opacity-100 blur-0"
-              : "-translate-y-12 scale-[0.97] opacity-0 blur-[6px] pointer-events-none"
-          }`}
+        <p
+          aria-live="polite"
+          className="px-2 pt-2 text-center text-[11px] text-[#ded2c0] sm:pt-3 sm:text-xs"
         >
-          {/* Delicate Location Eyebrow */}
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#d6bc96]/45 bg-[#1a130d]/60 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.26em] text-[#efdcb9] shadow-lg backdrop-blur-md sm:text-xs">
-            <Sparkles className="h-3 w-3 text-[#e5caa4]" />
-            <span>NILE CITY BOAT · ZAMALEK, CAIRO</span>
-          </span>
-
-          {/* Monumental "Welcome to CAVO Island" Headline descending gently */}
-          <h2
-            dir="ltr"
-            className="font-display mt-5 text-4xl font-bold tracking-tight text-white drop-shadow-[0_14px_36px_rgba(0,0,0,0.85)] sm:mt-6 sm:text-6xl lg:text-[78px] lg:leading-[1.04]"
-          >
-            <span className="block text-2xl font-normal tracking-[0.06em] text-[#f3e5ce]/90 sm:text-4xl lg:text-[44px]">
-              Welcome to
-            </span>
-            <span className="mt-1 block bg-gradient-to-r from-[#fff6e5] via-[#dfc092] to-[#fff2da] bg-clip-text italic text-transparent">
-              CAVO Island
-            </span>
-          </h2>
-
-          {/* Expanding Golden Hairline Divider */}
-          <div
-            className={`mt-5 h-[1.5px] rounded-full bg-gradient-to-r from-transparent via-[#e5caa4] to-transparent transition-all duration-[1800ms] delay-300 ease-out ${
-              showWelcomeText ? "w-44 opacity-90 sm:w-64" : "w-0 opacity-0"
-            }`}
-          />
-
-          {/* Bilingual Subtitle */}
-          <p
-            className={`mt-4 max-w-lg text-xs font-medium leading-relaxed text-[#efe5d6]/90 drop-shadow-md transition-all duration-[1400ms] delay-300 ease-out sm:text-base ${
-              showWelcomeText
-                ? "translate-y-0 opacity-100"
-                : "-translate-y-4 opacity-0"
-            }`}
-          >
-            {isAr
-              ? "أربع تجارب ضيافة استثنائية على ضفاف النيل في قلب الزمالك"
-              : "Cairo, From a Different Point of View · Four Nile Experiences"}
-          </p>
-        </div>
-      </div>
-
-      {/* BOTTOM PROGRESS HAIRLINE */}
-      <div className="relative z-30 mx-auto w-full max-w-md px-8 pb-7 sm:pb-10">
-        <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/15">
-          {playbackStarted ? (
-            <div
-              key={`prog-${runId}`}
-              style={
-                { "--prog-dur": `${PLAYBACK_WINDOW_MS / 1000}s` } as CSSProperties
-              }
-              className="cavo-progress-fill cavo-gold-gradient h-full w-full rounded-full"
-            />
-          ) : (
-            <div className="cavo-gold-gradient h-full w-1/4 animate-pulse rounded-full" />
-          )}
-        </div>
+          {playbackFailed
+            ? isAr
+              ? "اضغط تشغيل من أدوات الفيديو لبدء المشاهدة."
+              : "Tap play on the video controls to start watching."
+            : isAr
+              ? "الفيديو مكتوم في البداية. تقدر تفعّل الصوت من أدوات المشاهدة."
+              : "The film starts muted. Turn on sound from the player controls."}
+        </p>
+        <button
+          type="button"
+          onClick={() => setMode(null)}
+          className="mx-auto mt-2 inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-[#ebd4b2] transition hover:bg-white/10"
+        >
+          {isAr ? "العودة للموقع" : "Back to CAVO"}
+          <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+        </button>
       </div>
     </div>
   );

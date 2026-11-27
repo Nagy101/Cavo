@@ -113,14 +113,14 @@ export default async function BookPage({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+              <div className="cavo-no-scrollbar flex gap-2 overflow-x-auto pb-0.5 sm:grid sm:grid-cols-3 sm:gap-1.5 sm:overflow-visible sm:pb-0">
                 {siteConfig.contactLines.map((line) => (
                   <a
                     key={line.id}
                     href={line.telHref}
-                    className="flex items-center justify-between gap-1.5 rounded-xl border border-[var(--cavo-border)] bg-[#f1ede6] px-2.5 py-2 text-[11px] transition hover:border-[var(--cavo-gold)] sm:flex-col sm:items-start sm:justify-center"
+                    className="flex shrink-0 flex-col items-start justify-center gap-0.5 rounded-xl border border-[var(--cavo-border)] bg-[#f1ede6] px-3 py-2 text-[11px] transition hover:border-[var(--cavo-gold)] sm:px-2.5"
                   >
-                    <span className="truncate font-semibold text-[var(--cavo-ink)]">
+                    <span className="max-w-[140px] truncate font-semibold text-[var(--cavo-ink)] sm:max-w-full">
                       {line.label[locale]}
                     </span>
                     <span

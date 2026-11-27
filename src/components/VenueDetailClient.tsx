@@ -86,6 +86,8 @@ export function VenueDetailClient({
 
   useEffect(() => {
     if (lightboxIdx === null) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setLightboxIdx(null);
       if (e.key === "ArrowRight") {
@@ -100,7 +102,10 @@ export function VenueDetailClient({
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [lightboxIdx, photos.length]);
 
   const seatWhatsAppMessage = isAr
@@ -176,15 +181,15 @@ export function VenueDetailClient({
                   </a>
                 </div>
 
-                {/* 2x2 Venue Switcher Pills */}
-                <div className="grid grid-cols-2 gap-1.5">
+                {/* Horizontal Swipe Pill Row on Mobile, 2x2 Grid on sm+ */}
+                <div className="cavo-no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0">
                   {venues.map((v) => {
                     const isCurrent = v.slug === venue.slug;
                     return (
                       <Link
                         key={v.slug}
                         href={localePath(locale, `experiences/${v.slug}`)}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
+                        className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-xs font-semibold transition-all sm:shrink ${
                           isCurrent
                             ? "cavo-gold-gradient border-transparent text-white shadow-sm"
                             : "border-[var(--cavo-border)] bg-[#f1ede6] text-[var(--cavo-ink)]/85 hover:border-[var(--cavo-gold)]"

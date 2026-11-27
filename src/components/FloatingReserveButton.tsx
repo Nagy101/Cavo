@@ -59,7 +59,7 @@ export function FloatingReserveButton({ locale }: { locale: Locale }) {
 
   return (
     <div
-      className={`fixed right-4 bottom-5 z-30 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden ${
+      className={`fixed end-4 bottom-5 z-30 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden ${
         shouldShow
           ? "translate-y-0 scale-100 opacity-100"
           : "pointer-events-none translate-y-6 scale-90 opacity-0"

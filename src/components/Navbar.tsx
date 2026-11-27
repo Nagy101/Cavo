@@ -27,6 +27,7 @@ export function Navbar({ locale }: NavbarProps) {
   const pathname = usePathname() || `/${locale}`;
   const isAr = locale === "ar";
   const [scrolled, setScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const megaContainerRef = useRef<HTMLDivElement>(null);
@@ -35,16 +36,46 @@ export function Navbar({ locale }: NavbarProps) {
   const otherLocale: Locale = locale === "en" ? "ar" : "en";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    let rafId: number | null = null;
+    const updateScroll = () => {
+      rafId = null;
+      const y = window.scrollY;
+      setScrolled(y > 24);
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(maxScroll > 0 ? Math.min(1, Math.max(0, y / maxScroll)) : 0);
+    };
+    const onScroll = () => {
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(updateScroll);
+      }
+    };
+    updateScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     setMobileOpen(false);
     setMegaOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (!megaOpen) return;
@@ -394,6 +425,18 @@ export function Navbar({ locale }: NavbarProps) {
           </div>
         </div>
       )}
+      {/* Subtle Luxury Gold Reading Progress Hairline */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] overflow-hidden bg-transparent"
+      >
+        <div
+          style={{
+            transform: `scaleX(${scrollProgress})`,
+          }}
+          className="h-full w-full origin-left bg-gradient-to-r from-[#b59469] via-[#8b6c4a] to-[#c7a97e] transition-transform duration-150 ease-out rtl:origin-right"
+        />
+      </div>
     </header>
   );
 }

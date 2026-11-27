@@ -204,7 +204,7 @@ export function VisitContactForm({ locale }: { locale: Locale }) {
               setPrepared(false);
             }}
             placeholder={isAr ? "الاسم بالكامل" : "Your full name"}
-            className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f1ede6] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+            className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f1ede6] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
           />
         </div>
         <div>
@@ -225,7 +225,7 @@ export function VisitContactForm({ locale }: { locale: Locale }) {
               setPrepared(false);
             }}
             placeholder="+20 1XX XXX XXXX"
-            className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f1ede6] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+            className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f1ede6] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
           />
         </div>
       </div>
@@ -252,7 +252,7 @@ export function VisitContactForm({ locale }: { locale: Locale }) {
               ? "اكتب استفسارك أو الموعد وعدد الضيوف..."
               : "Share your inquiry, preferred date, or guest count..."
           }
-          className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f1ede6] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+          className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f1ede6] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
         />
       </div>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Clock, Mail, MapPin, Phone, Sparkles } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import { FooterLocaleSwitch } from "@/components/FooterLocaleSwitch";
 import { navCopy } from "@/data/copy";
 import { siteConfig } from "@/data/site";
 import { venues } from "@/data/venues";
@@ -9,11 +10,10 @@ import { localePath, type Locale } from "@/lib/i18n";
 export function Footer({ locale }: { locale: Locale }) {
   const isAr = locale === "ar";
   const nav = navCopy[locale];
-  const otherLocale: Locale = isAr ? "en" : "ar";
 
   return (
     <footer className="relative overflow-hidden border-t border-[var(--cavo-border)] bg-gradient-to-b from-[#ebe5dc] via-[#e4ddd2] to-[#dcd3c6] text-[var(--cavo-ink)]">
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pt-12 pb-24 sm:px-6 sm:pt-16 lg:py-20">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-12">
           {/* Brand & Heritage */}
           <div className="space-y-5 lg:col-span-4">
@@ -151,12 +151,7 @@ export function Footer({ locale }: { locale: Locale }) {
               </ul>
 
               <div className="mt-6 border-t border-[var(--cavo-border)] pt-4">
-                <Link
-                  href={localePath(otherLocale)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--cavo-border)] bg-[#f6f3ee] px-4 py-1.5 text-xs font-semibold text-[var(--cavo-gold-deep)] transition hover:border-[var(--cavo-gold)]"
-                >
-                  {nav.switchLabel}
-                </Link>
+                <FooterLocaleSwitch locale={locale} label={nav.switchLabel} />
               </div>
             </div>
           </div>

@@ -72,9 +72,9 @@ export default async function PrivateEventsPage({
       />
 
       <div className="relative z-10 mx-auto max-w-7xl space-y-10 px-3.5 sm:space-y-14 sm:px-6">
-        {/* BALANCED 12-COL HEADER & YACHTS CONCIERGE SHOWCASE */}
-        <header className="grid grid-cols-1 items-center gap-7 lg:grid-cols-12 lg:gap-10">
-          <div className="cavo-rise min-w-0 space-y-3 lg:col-span-7">
+        {/* BALANCED 12-COL HEADER & YACHTS CONCIERGE SHOWCASE (Visual-First on Mobile!) */}
+        <header className="grid grid-cols-1 items-center gap-5 sm:gap-7 lg:grid-cols-12 lg:gap-10">
+          <div className="cavo-rise order-2 min-w-0 space-y-3 lg:order-1 lg:col-span-7">
             <div className="flex flex-wrap items-center gap-2">
               <Breadcrumbs
                 locale={locale}
@@ -140,10 +140,10 @@ export default async function PrivateEventsPage({
             </div>
           </div>
 
-          {/* Asymmetric Dual Yacht Showcase */}
+          {/* Asymmetric Dual Yacht Showcase — First on Mobile, End on Desktop */}
           <FadeUp
             delay={0.08}
-            className="relative mx-auto grid w-full max-w-xl grid-cols-2 gap-3 sm:gap-4 lg:col-span-5"
+            className="relative order-1 mx-auto grid w-full max-w-xl grid-cols-2 gap-3 sm:gap-4 lg:order-2 lg:col-span-5"
           >
             <div className="cavo-sheen-card group overflow-hidden rounded-[22px] border border-[var(--cavo-gold)]/35 bg-[#f8f6f2] p-1.5 shadow-[0_20px_48px_-18px_rgba(70,54,36,0.2)] sm:rounded-[28px] sm:p-2">
               <div className="relative aspect-[4/4.6] overflow-hidden rounded-[16px] bg-[var(--cavo-stone)] sm:rounded-[20px]">

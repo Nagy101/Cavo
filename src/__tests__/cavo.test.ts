@@ -174,6 +174,9 @@ describe("Responsive intro & gallery video assets", () => {
       "media/video/cavo-official-intro-mobile.mp4",
       "media/video/cavo-official-poster.jpg",
       "media/video/cavo-official-poster-mobile.jpg",
+      "media/video/cavo-intro-mobile-s1.webp",
+      "media/video/cavo-intro-mobile-s2.webp",
+      "media/video/cavo-intro-mobile-s3.webp",
     ];
     for (const relPath of requiredPublicAssets) {
       expect(existsSync(join(process.cwd(), "public", relPath))).toBe(true);

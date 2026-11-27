@@ -547,7 +547,7 @@ export function EventPlannerForm({ locale }: { locale: Locale }) {
                   min={2}
                   max={300}
                   {...register("guestsCount", { valueAsNumber: true })}
-                  className="w-full rounded-xl border border-[var(--cavo-border)] bg-white py-2 text-center font-mono text-xs font-bold text-[var(--cavo-ink)] focus:border-[var(--cavo-gold)] focus:outline-none sm:text-sm"
+                  className="w-full rounded-xl border border-[var(--cavo-border)] bg-white py-2 text-center font-mono text-base font-bold text-[var(--cavo-ink)] focus:border-[var(--cavo-gold)] focus:outline-none sm:text-sm"
                 />
                 <button
                   type="button"
@@ -638,7 +638,7 @@ export function EventPlannerForm({ locale }: { locale: Locale }) {
                 type="text"
                 {...register("budgetRange")}
                 placeholder={isAr ? "مثال: 25,000 ج.م" : "e.g. 25,000 EGP"}
-                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
               />
             </div>
 
@@ -660,7 +660,7 @@ export function EventPlannerForm({ locale }: { locale: Locale }) {
                     ? "اكتب أي تفاصيل خاصة عن المنيو أو مدة الرحلة..."
                     : "Desired sailing hours, menu preferences, or decor ideas..."
                 }
-                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
               />
             </div>
           </div>
@@ -687,7 +687,7 @@ export function EventPlannerForm({ locale }: { locale: Locale }) {
                 type="text"
                 {...register("fullName")}
                 placeholder={isAr ? "الاسم الثنائي" : "Your full name"}
-                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
               />
               {errors.fullName && (
                 <p role="alert" className="mt-1 text-[11px] text-red-700">
@@ -712,7 +712,7 @@ export function EventPlannerForm({ locale }: { locale: Locale }) {
                 dir="ltr"
                 {...register("phone")}
                 placeholder="+20 1XX XXX XXXX"
-                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
               />
               {errors.phone && (
                 <p role="alert" className="mt-1 text-[11px] text-red-700">
@@ -735,7 +735,7 @@ export function EventPlannerForm({ locale }: { locale: Locale }) {
                 dir="ltr"
                 {...register("email")}
                 placeholder="name@example.com"
-                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+                className="w-full rounded-2xl border border-[var(--cavo-border)] bg-[#f3efe8] px-4 py-2.5 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/70 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
               />
               {errors.email && (
                 <p role="alert" className="mt-1 text-[11px] text-red-700">

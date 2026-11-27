@@ -6,6 +6,7 @@ import { FloatingReserveButton } from "@/components/FloatingReserveButton";
 import { Footer } from "@/components/Footer";
 import { LocaleDocumentSync } from "@/components/LocaleDocumentSync";
 import { Navbar } from "@/components/Navbar";
+import { PageMotion } from "@/components/PageMotion";
 import { getSiteBaseUrl, siteConfig } from "@/data/site";
 import { getDirection, isValidLocale, locales, type Locale } from "@/lib/i18n";
 
@@ -163,7 +164,15 @@ export default async function LocaleLayout({
       />
       <CavoWelcomeIntro locale={locale} />
       <Navbar locale={locale} />
-      <main>{children}</main>
+      <a
+        href="#main-content"
+        className="cavo-skip-link"
+      >
+        {locale === "ar" ? "تخطي إلى المحتوى" : "Skip to content"}
+      </a>
+      <main id="main-content">
+        <PageMotion>{children}</PageMotion>
+      </main>
       <Footer locale={locale} />
       <FloatingReserveButton locale={locale} />
     </div>

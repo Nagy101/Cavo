@@ -16,6 +16,66 @@ export const galleryCategories: {
 
 export const galleryItems: GalleryItem[] = [
   {
+    id: "cavo-welcome-lounge",
+    category: "place",
+    mediaType: "image",
+    src: "/media/hero/cavo-welcome-lounge.jpg",
+    venueTag: { en: "Main Restaurant", ar: "المطعم الرئيسي" },
+    title: {
+      en: "A Quiet Corner Above the Nile",
+      ar: "جلسة هادية بإطلالة على النيل",
+    },
+    caption: {
+      en: "Soft lounge seating, warm wood, and the CAVO signature beside the river.",
+      ar: "جلسات مريحة وخشب دافئ وشعار كافو على ضفة النيل.",
+    },
+  },
+  {
+    id: "cavo-lounge-evening",
+    category: "place",
+    mediaType: "image",
+    src: "/media/gallery/cavo-lounge-evening.jpg",
+    venueTag: { en: "Main Restaurant", ar: "المطعم الرئيسي" },
+    title: {
+      en: "A Softer View of the City",
+      ar: "إطلالة هادية على القاهرة",
+    },
+    caption: {
+      en: "A tucked-away riverside table framed by the boat's timber canopy.",
+      ar: "طاولة على النيل وسط تفاصيل المركب الخشبية الدافئة.",
+    },
+  },
+  {
+    id: "cavo-nile-room",
+    category: "place",
+    mediaType: "image",
+    src: "/media/hero/cavo-nile-room.jpg",
+    venueTag: { en: "Nile View", ar: "إطلالة النيل" },
+    title: {
+      en: "Room to Linger by the Water",
+      ar: "مساحة للراحة قدام النيل",
+    },
+    caption: {
+      en: "A sunlit CAVO lounge with the Zamalek riverfront just beyond the windows.",
+      ar: "جلسة كافو في ضوء النهار والنيل ظاهر من الشبابيك.",
+    },
+  },
+  {
+    id: "cavo-riverside-entry",
+    category: "place",
+    mediaType: "image",
+    src: "/media/gallery/cavo-riverside-entry.jpg",
+    venueTag: { en: "CAVO Island", ar: "كافو آيلاند" },
+    title: {
+      en: "A Warm Welcome on the River",
+      ar: "استقبال دافي على النيل",
+    },
+    caption: {
+      en: "A flower-covered pergola and CAVO's riverside entrance in daylight.",
+      ar: "مدخل كافو وسط الزهور وإطلالة مفتوحة على النيل.",
+    },
+  },
+  {
     id: "main-pergola-day",
     category: "place",
     mediaType: "image",

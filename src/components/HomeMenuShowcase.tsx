@@ -36,27 +36,27 @@ export function HomeMenuShowcase({ locale }: { locale: Locale }) {
   const getDishesForTab = (tab: HomeMenuTabId) => {
     switch (tab) {
       case "featured":
-        return menuItems.filter((item) => item.featured).slice(0, 6);
+        return menuItems.filter((item) => item.featured).slice(0, 4);
       case "grills-mains":
         return menuItems
           .filter(
             (item) =>
               item.category === "grills" || item.category === "tajins-mains"
           )
-          .slice(0, 6);
+          .slice(0, 4);
       case "morning":
         return menuItems
           .filter(
             (item) =>
               item.category === "breakfast" || item.category === "appetizers"
           )
-          .slice(0, 6);
+          .slice(0, 4);
       case "desserts-drinks":
         return menuItems
           .filter(
             (item) => item.category === "desserts" || item.category === "drinks"
           )
-          .slice(0, 6);
+          .slice(0, 4);
     }
   };
 
@@ -108,10 +108,10 @@ export function HomeMenuShowcase({ locale }: { locale: Locale }) {
         </Link>
       </div>
 
-      {/* Boutique 2-Column Grid on Phones, 3-Column on Tablets & Desktop */}
+      {/* Balanced 2-Column Grid on Phones & Tablets, Full 4-Column Row on Desktop (Zero Orphans) */}
       <div
         key={activeTab}
-        className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:gap-6"
+        className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-5"
       >
         {displayedDishes.map((dish, idx) => (
           <article
@@ -160,7 +160,7 @@ export function HomeMenuShowcase({ locale }: { locale: Locale }) {
             {/* Card Body */}
             <div className="flex min-w-0 flex-1 flex-col justify-between p-2 pt-2.5 sm:p-4 sm:pt-4">
               <div className="min-w-0">
-                <h3 className="font-display break-words text-sm font-semibold leading-snug text-[var(--cavo-ink)] transition-colors duration-300 group-hover:text-[var(--cavo-gold-deep)] sm:text-2xl">
+                <h3 className="font-display break-words text-sm font-semibold leading-snug text-[var(--cavo-ink)] transition-colors duration-300 group-hover:text-[var(--cavo-gold-deep)] sm:text-xl">
                   {dish.name[locale]}
                 </h3>
                 <p className="mt-1 line-clamp-2 break-words text-[11px] leading-relaxed text-[var(--cavo-smoke)] sm:mt-2 sm:text-sm">
@@ -177,7 +177,10 @@ export function HomeMenuShowcase({ locale }: { locale: Locale }) {
                   href={localePath(locale, "menu")}
                   className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--cavo-gold-deep)] transition group-hover:text-[var(--cavo-terracotta)] sm:text-xs"
                 >
-                  <span>
+                  <span className="sm:hidden">
+                    {isAr ? "التفاصيل والمنيو" : "View Menu"}
+                  </span>
+                  <span className="hidden sm:inline">
                     {isAr ? "تفاصيل وحاسبة الفاتورة" : "Estimator & Menu"}
                   </span>
                   <ArrowRight className="h-3 w-3 shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 sm:h-3.5 sm:w-3.5" />

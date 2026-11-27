@@ -384,6 +384,24 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
     setShowAllPages(false);
   }, [selectedCategory, selectedTag, searchQuery, sortBy]);
 
+  // Lock page scroll & allow Escape dismissal while Dish Quick-View or Hero Lightbox is open
+  useEffect(() => {
+    if (!quickViewDish && !heroLightboxOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setQuickViewDish(null);
+        setHeroLightboxOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [quickViewDish, heroLightboxOpen]);
+
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const list = menuItems.filter((item) => {
@@ -595,9 +613,9 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
                   </div>
                 </div>
 
-                {/* 4-Hour Interactive Time Switcher Strip Inside Right Dock */}
+                {/* 4-Hour Interactive Time Switcher Strip Inside Right Dock (Desktop — mobile uses visual cards directly below photo) */}
                 <div
-                  className="mt-3 grid grid-cols-4 gap-1 rounded-xl border border-[var(--cavo-border)] bg-[#f1ede6] p-1"
+                  className="mt-3 hidden grid-cols-4 gap-1 rounded-xl border border-[var(--cavo-border)] bg-[#f1ede6] p-1 lg:grid"
                   role="tablist"
                   aria-label={
                     isAr ? "تبديل وقت اليوم" : "Time of Day Quick Switcher"
@@ -1032,7 +1050,7 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
                     ? "ابحث باسم الطبق أو المكون (مشاوي، سلمون، ماتشا)..."
                     : "Search dish or ingredient (grills, salmon, matcha)..."
                 }
-                className="w-full rounded-full border border-[var(--cavo-border)] bg-[#f1ede6] py-2.5 ps-10 pe-9 text-xs font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/75 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
+                className="w-full rounded-full border border-[var(--cavo-border)] bg-[#f1ede6] py-2.5 ps-10 pe-9 text-base font-medium text-[var(--cavo-ink)] placeholder:text-[var(--cavo-smoke)]/75 focus:border-[var(--cavo-gold)] focus:bg-white focus:outline-none sm:text-sm"
               />
               {searchQuery && (
                 <button
@@ -1047,35 +1065,37 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
             </div>
 
             {/* Interactive Controls Row: Live Tax Switch + Sort + Grid/List View Toggle */}
-            <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
-              {/* Live Tax-Inclusive Price Switch ("حركة عالمية") */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              {/* Live Tax-Inclusive Price Switch */}
               <button
                 type="button"
                 onClick={() => setShowTaxInclusive((prev) => !prev)}
                 aria-pressed={showTaxInclusive}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all sm:text-xs ${
+                className={`inline-flex w-full items-center justify-between gap-2 rounded-full border px-3.5 py-2 text-[11px] font-semibold transition-all sm:w-auto sm:justify-start sm:px-3 sm:py-1.5 sm:text-xs ${
                   showTaxInclusive
                     ? "border-[var(--cavo-gold)] bg-[#282018] text-[#f5ece0] shadow-sm"
                     : "border-[var(--cavo-border)] bg-[#f1ede6] text-[var(--cavo-ink)] hover:border-[var(--cavo-gold)]"
                 }`}
               >
-                <span
-                  className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors ${
-                    showTaxInclusive
-                      ? "bg-[var(--cavo-gold)] justify-end"
-                      : "bg-[var(--cavo-sand)] justify-start"
-                  }`}
-                >
-                  <span className="h-3 w-3 rounded-full bg-white shadow-sm" />
-                </span>
-                <span>
-                  {isAr
-                    ? "عرض السعر شامل الخدمة والضريبة"
-                    : "Show Net Price (Incl. Tax)"}
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors ${
+                      showTaxInclusive
+                        ? "bg-[var(--cavo-gold)] justify-end"
+                        : "bg-[var(--cavo-sand)] justify-start"
+                    }`}
+                  >
+                    <span className="h-3 w-3 rounded-full bg-white shadow-sm" />
+                  </span>
+                  <span>
+                    {isAr
+                      ? "عرض السعر شامل الخدمة والضريبة"
+                      : "Show Net Price (Incl. Tax)"}
+                  </span>
                 </span>
               </button>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-1.5 sm:justify-end">
                 {/* Sort Selector */}
                 <div className="inline-flex items-center gap-1 rounded-full border border-[var(--cavo-border)] bg-[#f1ede6] px-2.5 py-1.5 text-[11px] sm:px-3 sm:text-xs">
                   <ArrowUpDown className="h-3 w-3 text-[var(--cavo-gold-deep)]" />
@@ -1134,7 +1154,7 @@ export function MenuExplorer({ locale }: { locale: Locale }) {
 
           {/* 3. Single-Row Horizontal Swipe Dietary Pills + Active Category Chef Note */}
           <div className="mt-3 flex flex-col justify-between gap-2.5 border-t border-[var(--cavo-border)]/60 pt-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <div className="cavo-no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               <button
                 type="button"
                 onClick={() => setSelectedTag("all")}

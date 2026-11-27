@@ -246,7 +246,7 @@ export default async function ContactPage({
               <div className="flex min-w-0 flex-col justify-between gap-4 lg:col-span-7">
                 <NileMapEmbed
                   locale={locale}
-                  className="h-[290px] w-full sm:h-[370px] lg:flex-1"
+                  className="h-[245px] w-full sm:h-[370px] lg:flex-1"
                 />
 
                 {/* 3-Step Arrival & Boarding Strip Under Map */}

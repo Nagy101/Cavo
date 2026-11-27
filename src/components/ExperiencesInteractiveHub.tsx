@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -155,6 +155,20 @@ export function ExperiencesInteractiveHub({ locale }: { locale: Locale }) {
     photoIdx: number;
   } | null>(null);
   const touchStartXRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!lightboxState) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxState(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [lightboxState]);
 
   const cycleCardPhoto = (slug: VenueSlug, total: number, delta: number) => {
     setCardPhotoIdx((prev) => {

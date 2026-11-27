@@ -210,17 +210,18 @@ body {
 
 @keyframes cavoMarquee {
   0% {
-    transform: translateX(0%);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
 .animate-cavo-marquee {
   display: flex;
   width: max-content;
-  animation: cavoMarquee 36s linear infinite;
+  will-change: transform;
+  animation: cavoMarquee 42s linear infinite;
 }
 
 .animate-cavo-marquee:hover {
@@ -386,6 +387,176 @@ body {
     transform 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0s);
 }
 
+/* Gentle page-to-page motion shared by every locale route. */
+@keyframes cavoPageEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cavo-page-enter {
+  animation: cavoPageEnter 0.42s var(--cavo-ease) both;
+}
+
+@keyframes cavoWelcomeCopy {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cavo-welcome-copy {
+  animation: cavoWelcomeCopy 0.9s var(--cavo-ease) both;
+  animation-delay: var(--d, 0s);
+}
+
+/* Pre-paint dark curtain so first-visit home loads directly into the intro without flashing the page */
+html[data-cavo-intro="pending"] body {
+  overflow: hidden;
+}
+
+html[data-cavo-intro="pending"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: radial-gradient(
+      ellipse at 50% 38%,
+      rgba(217, 180, 130, 0.14) 0%,
+      rgba(18, 13, 9, 0.94) 55%,
+      #120d09 100%
+    ),
+    #120d09;
+  pointer-events: none;
+}
+
+/* Luxury Welcome Intro choreography (100% GPU-composited transform & opacity — zero paint/blur stutter) */
+@keyframes cavoPortalReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes cavoPortalPhotoDrift {
+  from {
+    transform: scale(1.13) translate3d(0, 1%, 0);
+  }
+  to {
+    transform: scale(1.01) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cavoPortalVeilLift {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cavoGoldSheen {
+  0% {
+    opacity: 0;
+    transform: translate3d(-120%, 0, 0) skewX(-18deg);
+  }
+  25% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(230%, 0, 0) skewX(-18deg);
+  }
+}
+
+@keyframes cavoMaskRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 105%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cavoLineExpand {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.cavo-portal-reveal {
+  animation: cavoPortalReveal 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.cavo-portal-drift {
+  animation: cavoPortalPhotoDrift 5.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform;
+}
+
+.cavo-portal-veil {
+  animation: cavoPortalVeilLift 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: opacity;
+}
+
+.cavo-portal-sheen {
+  animation: cavoGoldSheen 1.35s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+  will-change: transform, opacity;
+}
+
+.cavo-mask-rise {
+  animation: cavoMaskRise 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0s);
+  will-change: transform, opacity;
+}
+
+.cavo-line-expand {
+  transform-origin: center;
+  animation: cavoLineExpand 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0s);
+  will-change: transform, opacity;
+}
+
+.cavo-skip-link {
+  position: fixed;
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.75rem;
+  z-index: 120;
+  transform: translateY(-180%);
+  border-radius: 999px;
+  background: var(--cavo-ink);
+  color: var(--cavo-pearl);
+  padding: 0.65rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+
+.cavo-skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 /* Cinema Ken Burns slow camera drift for active Hero & Day-to-Night frames */
 @keyframes cavoKenBurns {
   from {
@@ -413,7 +584,7 @@ body {
 
 .cavo-scene-timer {
   transform-origin: left center;
-  animation: cavoSceneTimer 5.5s linear forwards;
+  animation: cavoSceneTimer 7s linear forwards;
 }
 
 [dir="rtl"] .cavo-scene-timer {
@@ -608,12 +779,23 @@ body {
     scroll-behavior: auto;
   }
 
-  *,
+  *:not(.cavo-progress-fill),
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .cavo-page-enter,
+  .cavo-welcome-copy,
+  .cavo-portal-reveal,
+  .cavo-portal-drift,
+  .cavo-portal-veil,
+  .cavo-portal-sheen,
+  .cavo-mask-rise,
+  .cavo-line-expand {
+    animation: none !important;
   }
 }

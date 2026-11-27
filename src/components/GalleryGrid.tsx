@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import {
   ChevronLeft,
@@ -17,6 +17,13 @@ import {
 } from "@/data/gallery";
 import type { Locale } from "@/lib/i18n";
 
+const MEDIA_CACHE_VER = "v=9";
+
+function withMediaVersion(src?: string): string | undefined {
+  if (!src) return undefined;
+  return src.includes("?") ? src : `${src}?${MEDIA_CACHE_VER}`;
+}
+
 interface GalleryGridProps {
   locale: Locale;
   limit?: number;
@@ -32,6 +39,8 @@ export function GalleryGrid({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [lightboxVideoPlaying, setLightboxVideoPlaying] = useState(false);
+  const lightboxVideoRef = useRef<HTMLVideoElement | null>(null);
   const isAr = locale === "ar";
 
   useEffect(() => {
@@ -50,7 +59,10 @@ export function GalleryGrid({
   const visibleItems = limit ? filtered.slice(0, limit) : filtered;
 
   useEffect(() => {
+    setLightboxVideoPlaying(false);
     if (lightboxIndex === null) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setLightboxIndex(null);
       if (e.key === "ArrowRight") {
@@ -67,7 +79,10 @@ export function GalleryGrid({
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [lightboxIndex, visibleItems.length]);
 
   const activeLightbox =
@@ -77,7 +92,7 @@ export function GalleryGrid({
     <div>
       {showFilters && (
         <div
-          className="mb-6 flex flex-wrap items-center gap-1.5 rounded-2xl border border-[var(--cavo-border)] bg-[#f8f6f2] p-1.5 shadow-sm sm:mb-9 sm:inline-flex sm:gap-2 sm:rounded-full"
+          className="cavo-no-scrollbar mb-6 flex flex-nowrap items-center gap-1.5 overflow-x-auto rounded-full border border-[var(--cavo-border)] bg-[#f8f6f2] p-1.5 shadow-sm sm:mb-9 sm:inline-flex sm:flex-wrap sm:gap-2"
           role="tablist"
           aria-label={isAr ? "تصنيفات معرض الصور" : "Gallery Filter Tabs"}
         >
@@ -93,7 +108,7 @@ export function GalleryGrid({
                   setFilter(cat.id);
                   setLightboxIndex(null);
                 }}
-                className={`relative min-h-[38px] rounded-xl px-3.5 py-2 text-[11px] font-semibold transition-all duration-300 sm:rounded-full sm:px-5 sm:py-2.5 sm:text-xs ${
+                className={`relative min-h-[38px] shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[11px] font-semibold transition-all duration-300 sm:px-5 sm:py-2.5 sm:text-xs ${
                   active
                     ? "cavo-gold-gradient text-white shadow-sm"
                     : "text-[var(--cavo-ink)]/85 hover:bg-[var(--cavo-gold-pale)]/70 hover:text-[var(--cavo-gold-deep)]"
@@ -258,38 +273,79 @@ export function GalleryGrid({
               className="relative h-[52vh] w-full overflow-hidden rounded-[18px] bg-[#1a130d] sm:h-[58vh] sm:rounded-[22px]"
             >
               {activeLightbox.mediaType === "video" ? (
-                <video
-                  key={`${activeLightbox.id}-${isMobileViewport ? "m" : "d"}`}
-                  ref={(el) => {
-                    if (!el || el.dataset.initPlay === "1") return;
-                    el.dataset.initPlay = "1";
-                    el.playsInline = true;
-                    el.setAttribute("playsinline", "");
-                    el.setAttribute("webkit-playsinline", "true");
-                    const p = el.play();
-                    if (p && typeof p.then === "function") {
-                      p.catch(() => {
-                        el.defaultMuted = true;
-                        el.muted = true;
-                        el.play().catch(() => {});
-                      });
-                    }
-                  }}
-                  src={
-                    isMobileViewport && activeLightbox.mobileSrc
-                      ? activeLightbox.mobileSrc
-                      : activeLightbox.src
-                  }
-                  controls
-                  playsInline
-                  preload="auto"
-                  poster={
-                    isMobileViewport && activeLightbox.mobilePoster
-                      ? activeLightbox.mobilePoster
-                      : activeLightbox.poster
-                  }
-                  className="h-full w-full object-contain"
-                />
+                <div className="relative h-full w-full">
+                  <video
+                    key={`${activeLightbox.id}-${isMobileViewport ? "m" : "d"}`}
+                    ref={(el) => {
+                      lightboxVideoRef.current = el;
+                      if (!el || el.dataset.initPlay === "1") return;
+                      el.dataset.initPlay = "1";
+                      el.defaultMuted = true;
+                      el.muted = true;
+                      el.playsInline = true;
+                      el.setAttribute("muted", "");
+                      el.setAttribute("playsinline", "");
+                      el.setAttribute("webkit-playsinline", "true");
+                      const p = el.play();
+                      if (p && typeof p.then === "function") {
+                        p.then(() => {
+                          setLightboxVideoPlaying(true);
+                        }).catch(() => {});
+                      }
+                    }}
+                    src={withMediaVersion(
+                      isMobileViewport && activeLightbox.mobileSrc
+                        ? activeLightbox.mobileSrc
+                        : activeLightbox.src
+                    )}
+                    autoPlay
+                    muted
+                    loop
+                    controls
+                    playsInline
+                    preload="auto"
+                    onPlaying={() => setLightboxVideoPlaying(true)}
+                    onTimeUpdate={(e) => {
+                      if (e.currentTarget.currentTime > 0.03) {
+                        setLightboxVideoPlaying(true);
+                      }
+                    }}
+                    onPause={() => setLightboxVideoPlaying(false)}
+                    poster={withMediaVersion(
+                      isMobileViewport && activeLightbox.mobilePoster
+                        ? activeLightbox.mobilePoster
+                        : activeLightbox.poster
+                    )}
+                    className="h-full w-full object-contain"
+                  />
+                  {!lightboxVideoPlaying && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const vid = lightboxVideoRef.current;
+                        if (!vid) return;
+                        vid.playsInline = true;
+                        vid
+                          .play()
+                          .then(() => setLightboxVideoPlaying(true))
+                          .catch(() => {
+                            vid.defaultMuted = true;
+                            vid.muted = true;
+                            vid
+                              .play()
+                              .then(() => setLightboxVideoPlaying(true))
+                              .catch(() => {});
+                          });
+                      }}
+                      aria-label={isAr ? "تشغيل الفيديو" : "Play video"}
+                      className="pointer-events-auto absolute inset-0 z-10 flex items-center justify-center bg-black/20 transition hover:bg-black/30"
+                    >
+                      <span className="cavo-gold-gradient flex h-14 w-14 items-center justify-center rounded-full border border-white/50 text-white shadow-xl">
+                        <Play className="ms-0.5 h-6 w-6 fill-current" />
+                      </span>
+                    </button>
+                  )}
+                </div>
               ) : (
                 <Image
                   src={activeLightbox.src}

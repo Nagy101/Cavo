@@ -64,16 +64,16 @@ export const businessConfirmationRegistry: Record<
     value: null,
     confirmationStatus: "requires_business_confirmation",
     note: {
-      en: "Private event packages are tailored to each inquiry; preset packages await final management sign-off.",
-      ar: "تفاصيل باقات المناسبات الخاصة تُصمّم حسب كل طلب وتنتظر اعتماد الإدارة لباقات ثابتة.",
+      en: "Every private event and yacht charter is tailored to your guest count, styling, and dining preferences directly with our events desk.",
+      ar: "كل مناسبة خاصة أو رحلة يخت تُصمّم بالكامل حسب عدد الضيوف، التجهيزات، وقائمة الضيافة بالتنسيق المباشر مع فريق المناسبات.",
     },
   },
   liveReservationApi: {
     value: null,
     confirmationStatus: "requires_business_confirmation",
     note: {
-      en: "No live POS/table-availability API is connected yet; all website submissions prepare a verified booking request for host confirmation.",
-      ar: "لا يوجد ربط لحظي بتوافر الطاولات حالياً؛ طلبات الموقع تُعدّ كطلب حجز منظم ينتظر تأكيد الاستقبال.",
+      en: "Every reservation request is reviewed personally by our host desk aboard Nile City Boat to confirm your preferred waterside table.",
+      ar: "يُراجع فريق الاستقبال على مركب نايل سيتي كل طلب حجز شخصياً لتأكيد أفضل طاولة متاحة على النيل.",
     },
   },
 };

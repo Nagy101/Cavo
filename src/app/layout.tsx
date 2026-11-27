@@ -6,6 +6,7 @@ import {
   Plus_Jakarta_Sans,
 } from "next/font/google";
 import { getSiteBaseUrl } from "@/data/site";
+import { WELCOME_PHOTO, WELCOME_SEEN_KEY } from "@/lib/intro";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -66,8 +67,19 @@ export default function RootLayout({
     cairo.variable,
   ].join(" ");
 
+  const introBootScript = `(function(){try{var p=location.pathname.replace(/\\/+$/,"");if((p==="/ar"||p==="/en")&&!sessionStorage.getItem(${JSON.stringify(WELCOME_SEEN_KEY)})){document.documentElement.dataset.cavoIntro="pending";setTimeout(function(){if(document.documentElement.dataset.cavoIntro==="pending"){delete document.documentElement.dataset.cavoIntro;}},2600);}}catch(e){}})();`;
+
   return (
     <html lang="en" className={fontVars} suppressHydrationWarning>
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href={WELCOME_PHOTO}
+          fetchPriority="high"
+        />
+        <script dangerouslySetInnerHTML={{ __html: introBootScript }} />
+      </head>
       <body className="bg-[var(--cavo-pearl)] text-[var(--cavo-ink)] antialiased">
         {children}
       </body>
